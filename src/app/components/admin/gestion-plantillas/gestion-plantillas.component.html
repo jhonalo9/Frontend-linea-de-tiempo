@@ -41,6 +41,10 @@
           <i class="fas fa-globe me-1"></i>
           Públicas 
         </option>
+        <option value="privadas" [selected]="vista === 'privadas'">
+          <i class="fas fa-lock me-1"></i>
+          Privadas 
+        </option>
         <option *ngIf="esAdmin" value="todas" [selected]="vista === 'todas'">
           <i class="fas fa-crown me-1"></i>
           Todas
@@ -52,6 +56,7 @@
   <h4>
     <span *ngIf="vista === 'mis-plantillas'">{{misPlantillas.length}}</span>
     <span *ngIf="vista === 'publicas'">{{plantillasPublicas.length}}</span>
+    <span *ngIf="vista === 'privadas'">{{plantillasPrivadas.length}}</span>
     <span *ngIf="vista === 'todas' && esAdmin">{{todasPlantillas.length}}</span>
     Plantillas
   </h4>
@@ -83,6 +88,7 @@
         {{ filtro ? 'No se encontraron plantillas que coincidan con tu búsqueda.' : 
             vista === 'mis-plantillas' ? 'Aún no has creado ninguna plantilla.' : 
             vista === 'publicas' ? 'No hay plantillas públicas disponibles.' :
+             vista === 'privadas' ? 'No tienes plantillas privadas.' :
             'No hay plantillas en el sistema.' }}
       </p>
       <a *ngIf="vista === 'mis-plantillas'" 

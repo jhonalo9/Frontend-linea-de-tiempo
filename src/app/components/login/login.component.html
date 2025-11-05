@@ -28,6 +28,7 @@
         type="email"
         formControlName="email"
         placeholder="Ingresa tu correo"
+        [disabled]="hasRateLimitError"
       />
       <div
         *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched"
@@ -63,6 +64,16 @@
     <div *ngIf="mensaje" class="error-message">{{ mensaje }}</div>
     <div *ngIf="errorMessage" class="error-message">
       {{ errorMessage }}
+    </div>
+
+
+    <div *ngIf="rateLimitError" class="rate-limit-error">
+      <div class="rate-limit-message">
+        {{ rateLimitError }}
+      </div>
+      <div *ngIf="retryAfterSeconds > 0" class="countdown">
+        Tiempo restante: {{ getFormattedCountdown() }}
+      </div>
     </div>
   </form>
 

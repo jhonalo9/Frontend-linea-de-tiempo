@@ -13,10 +13,10 @@ body.presentacion-mode .canvas-area {
   padding: 0 !important;
 }
 
-body.presentacion-mode #konva-container {
+/*body.presentacion-mode #konva-container {
   width: 100% !important;
   height: 100% !important;
-}
+}*/
 
 
 .editor-container {
@@ -147,11 +147,11 @@ body.presentacion-mode #konva-container {
   position: relative;
 }
 
-#konva-container {
+/*#konva-container {
   width: 100%;
   height: 100%;
   background-color: #f9f9f9;
-}
+}*/
 
 /* Estilos para eventos históricos */
 .historical-events {
@@ -1084,8 +1084,7 @@ border-radius: 15px;
 }
 
 #konva-container {
-  width: 95%;
-  height: 95%;
+  width: 100%;
   background: #ffffff;
   border-radius: 1px;
   box-shadow: 0 0 5px #151515;
@@ -1455,11 +1454,11 @@ border-radius: 15px;
   padding: 0;
 }
 
-.presentacion-mode #konva-container {
+/*.presentacion-mode #konva-container {
   width: 100% !important;
   height: 100% !important;
 }
-
+*/
 
 
 

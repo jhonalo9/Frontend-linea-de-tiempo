@@ -200,3 +200,36 @@ button:disabled {
 }
 
 
+.rate-limit-error {
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 15px 0;
+  text-align: center;
+}
+
+.rate-limit-message {
+  color: #856404;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.countdown {
+  color: #d63031;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* Deshabilitar inputs cuando hay rate limiting */
+input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+

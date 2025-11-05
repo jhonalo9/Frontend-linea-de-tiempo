@@ -20,6 +20,13 @@ export interface EventoData {
   person: string;
   description: string;
   image?:string;
+
+  
+  orden?: number; //Orden original del evento
+  posicionLibre?: { // Posición personalizada
+    x: number;
+    y: number;
+  };
   
 }
 
@@ -67,8 +74,27 @@ export interface ConfiguracionTimeline {
   maxYear: number;
   stageWidth: number;
   stageHeight: number;
+  lineaDeTiempo?: LineaDeTiempoConfig;
 }
 
+
+export interface LineaDeTiempoConfig {
+  tipo: 'horizontal' | 'vertical' | 'curve' | 'wave' | 'zigzag' | 'spiral' | 's-curve' | 'custom';
+  designId: string;
+  positionX?: number;
+  positionY?: number;
+  amplitude?: number;
+  frequency?: number;
+  intensity?: number;
+  intensitycurva?: number;
+  anchoTotal?: number;
+  turns?: number;
+  estilo?: {
+    stroke: string;
+    strokeWidth: number;
+    lineCap: string;
+  };
+}
 export interface ProyectoData {
   metadata: MetadataProyecto;
   configuracion: ConfiguracionTimeline;
@@ -136,12 +162,7 @@ export class ProyectoService {
 
   setProyectoTemporal(proyecto: ProyectoTemporal): void {
   this.proyectoTemporal.next(proyecto);
-  /*console.log('📦 Proyecto temporal guardado:', {
-    titulo: proyecto.titulo,
-    descripcion: proyecto.descripcion,
-    tienePlantilla: !!proyecto.plantillaData,
-    nombrePlantilla: proyecto.plantillaData?.nombre || proyecto.plantillaData?.titulo
-  });*/
+ 
 }
 
   getProyectoTemporal(): ProyectoTemporal | null {
@@ -174,20 +195,27 @@ export class ProyectoService {
       data: this.ensureStringData(proyecto.data)
     };
 
-    console.log('📤 Creando proyecto:', proyectoParaEnviar);
     return this.http.post<ProyectoResponseDTO>(this.apiUrl, proyectoParaEnviar);
   }
 
   // PUT /api/proyectos/{id} - Actualizar proyecto completo
   updateProyecto(id: number, proyecto: ProyectoRequest): Observable<ProyectoResponseDTO> {
-    const proyectoParaEnviar = {
-      ...proyecto,
-      data: this.ensureStringData(proyecto.data)
-    };
+  const proyectoParaEnviar = {
+    ...proyecto,
+    data: this.ensureStringData(proyecto.data)
+  };
 
-    console.log('📤 Actualizando proyecto:', proyectoParaEnviar);
-    return this.http.put<ProyectoResponseDTO>(`${this.apiUrl}/${id}`, proyectoParaEnviar);
-  }
+  console.log('Actualizando proyecto:', {
+    id,
+    url: `${this.apiUrl}/${id}`,
+    titulo: proyectoParaEnviar.titulo,
+    descripcion: proyectoParaEnviar.descripcion,
+    plantillaBaseId: proyectoParaEnviar.plantillaBaseId,
+    dataLength: proyectoParaEnviar.data.length
+  });
+
+  return this.http.put<ProyectoResponseDTO>(`${this.apiUrl}/${id}`, proyectoParaEnviar);
+}
 
   // PATCH /api/proyectos/{id}/data - Actualizar solo los datos
   updateProyectoData(id: number, data: ProyectoData): Observable<{message: string}> {
@@ -269,7 +297,7 @@ export class ProyectoService {
 
 
   limpiarDataParaServidor(proyectoData: ProyectoData): ProyectoData {
-  console.log('🧹 Limpiando datos para servidor...');
+  //console.log('🧹 Limpiando datos para servidor...');
   
   return {
     ...proyectoData,
@@ -304,7 +332,7 @@ private procesarImagenParaServidor(image: string | undefined): string {
   
   // ✅ Si es data URL y es muy larga, usar marcador temporal
   if (image.startsWith('data:image') && image.length > 5000) {
-    console.log('📝 Reemplazando data URL larga por marcador temporal');
+    //console.log('📝 Reemplazando data URL larga por marcador temporal');
     return 'TEMPORAL_DATA_URL'; // Marcador que luego reemplazaremos
   }
   
@@ -349,11 +377,11 @@ serializarData(data: ProyectoData): string {
     // ✅ CUARTO: Validar que el JSON sea parseable
     JSON.parse(jsonString);
     
-    console.log('✅ JSON válido, tamaño:', jsonString.length, 'caracteres');
+    //console.log('✅ JSON válido, tamaño:', jsonString.length, 'caracteres');
     return jsonString;
     
   } catch (error) {
-    console.error('❌ Error serializando datos:', error);
+    console.error('Error serializando datos:', error);
     
     // ✅ FALLBACK: Enviar estructura mínima en caso de error
     const dataMinima = this.crearEstructuraDataMinima(data);
@@ -446,7 +474,6 @@ actualizarMetadatos(titulo: string, descripcion: string): void {
       titulo,
       descripcion
     });
-    console.log('✏️ Metadatos actualizados:', { titulo, descripcion });
   }
 }
 

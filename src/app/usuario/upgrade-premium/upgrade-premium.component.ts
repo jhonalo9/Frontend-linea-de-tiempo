@@ -11,7 +11,7 @@ import { RouterModule } from '@angular/router';
   selector: 'app-upgrade-premium',
   templateUrl: './upgrade-premium.component.html',
   styleUrls: ['./upgrade-premium.component.css'],
-  imports: [CommonModule, FormsModule, HeaderComponent,RouterModule ]
+  imports: [CommonModule, FormsModule, HeaderComponent, RouterModule]
 })
 export class UpgradePremiumComponent implements OnInit {
   usuario: CurrentUser | null = null;
@@ -19,13 +19,10 @@ export class UpgradePremiumComponent implements OnInit {
   mensaje: string = '';
   tipoMensaje: 'success' | 'error' | 'info' = 'info';
   mostrarMensaje = false;
-
-  pasos = [
-    { titulo: 'Selección de Plan', completado: true },
-    { titulo: 'Información de Pago', completado: false },
-    { titulo: 'Confirmación', completado: false }
-  ];
-  pasoActual = 0;
+  mostrarModal = false;
+  pagoExitoso = false;
+  planSeleccionado: 'mensual' | 'anual' = 'mensual';
+  esAnual = false; // Para determinar si el usuario tiene plan anual
 
   // Datos del formulario de pago
   datosPago = {
@@ -57,10 +54,41 @@ export class UpgradePremiumComponent implements OnInit {
       return;
     }
 
-    if (this.usuario.plan === 'PREMIUM') {
+    // Aquí podrías determinar si el usuario tiene plan anual basándote en datos adicionales
+    // Por ahora, asumimos que si es PREMIUM, es mensual
+    this.esAnual = false;
+  }
+
+  seleccionarPlan(plan: 'mensual' | 'anual'): void {
+    if (this.usuario?.plan === 'PREMIUM') {
       this.mostrarAlerta('Ya tienes una cuenta Premium', 'info');
-      this.router.navigate(['/plan']);
+      return;
     }
+
+    this.planSeleccionado = plan;
+    this.mostrarModal = true;
+    
+    // Pre-llenar el email si está disponible
+    if (this.usuario?.email) {
+      this.datosPago.email = this.usuario.email;
+    }
+  }
+
+  cerrarModal(): void {
+    this.mostrarModal = false;
+    // Limpiar formulario
+    this.datosPago = {
+      numeroTarjeta: '',
+      fechaExpiracion: '',
+      cvv: '',
+      nombreTitular: '',
+      email: this.usuario?.email || ''
+    };
+  }
+
+  cerrarModalExito(): void {
+    this.pagoExitoso = false;
+    this.router.navigate(['/dashboard']);
   }
 
   procesarPago(): void {
@@ -81,13 +109,14 @@ export class UpgradePremiumComponent implements OnInit {
     this.usuarioService.upgradeAPremium().subscribe({
       next: (usuarioActualizado) => {
         this.cargando = false;
+        this.mostrarModal = false;
         this.usuario = this.authService.getCurrentUser();
-        this.pasoActual = 2;
-        this.mostrarAlerta('¡Felicidades! Ahora eres usuario Premium', 'success');
+        this.pagoExitoso = true;
         
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 3000);
+        // Si es plan anual, actualizar la bandera
+        if (this.planSeleccionado === 'anual') {
+          this.esAnual = true;
+        }
       },
       error: (error) => {
         this.cargando = false;
@@ -115,18 +144,6 @@ export class UpgradePremiumComponent implements OnInit {
       this.datosPago.nombreTitular.trim().length > 0 &&
       this.datosPago.email.includes('@')
     );
-  }
-
-  siguientePaso(): void {
-    if (this.pasoActual < this.pasos.length - 1) {
-      this.pasoActual++;
-    }
-  }
-
-  pasoAnterior(): void {
-    if (this.pasoActual > 0) {
-      this.pasoActual--;
-    }
   }
 
   mostrarAlerta(mensaje: string, tipo: 'success' | 'error' | 'info'): void {

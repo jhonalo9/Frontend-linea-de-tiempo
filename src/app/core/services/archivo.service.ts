@@ -123,21 +123,37 @@ export class ArchivoService {
    * Obtener URL completa del archivo
    */
   obtenerUrlArchivo(
-    tipoUsuario: 'users' | 'admins' | 'users-premium',
-    usuarioId: number,
-    proyectoId: number,
-    tipo: 'portadas' | 'assets',
-    nombreArchivo: string,
-    esPlantilla: boolean = false
-  ): string {
-    let url = `${environment.apiUrl}/archivos/${tipoUsuario}/${usuarioId}/${proyectoId}/${tipo}/${nombreArchivo}`;
-    
-    if (esPlantilla) {
-      url += '?esPlantilla=true';
-    }
-    
-    return url;
+  tipoUsuario: 'users' | 'admins' | 'users-premium',
+  usuarioId: number,
+  proyectoId: number,
+  tipo: 'portadas' | 'assets',
+  nombreArchivo: string,
+  esPlantilla: boolean = false,
+  download: boolean = false // ✅ NUEVO PARÁMETRO
+): string {
+  const baseUrl = environment.apiUrl;
+  
+  // Construir URL base
+  let url = `${baseUrl}/archivos/${tipoUsuario}/${usuarioId}/${proyectoId}/${tipo}/${nombreArchivo}`;
+  
+  // Agregar query params si es necesario
+  const params: string[] = [];
+  
+  if (esPlantilla) {
+    params.push('esPlantilla=true');
   }
+  
+  if (download) {
+    params.push('download=true');
+  }
+  
+  // Agregar params a la URL
+  if (params.length > 0) {
+    url += '?' + params.join('&');
+  }
+  
+  return url;
+}
 
   // ========== MÉTODOS DE CONVENIENCIA PARA OBTENER URLs ==========
 
@@ -207,6 +223,23 @@ export class ArchivoService {
     return this.obtenerUrlArchivo('users-premium', usuarioId, plantillaId, 'portadas', nombreArchivo, true);
   }
 
+
+  obtenerUrlPortada(
+  usuarioId: number,
+  proyectoId: number,
+  nombreArchivo: string,
+  tipoUsuario: 'users' | 'admins' | 'users-premium' = 'users'
+): string {
+  return this.obtenerUrlArchivo(
+    tipoUsuario,
+    usuarioId,
+    proyectoId,
+    'portadas',
+    nombreArchivo,
+    false, // No es plantilla
+    false  // No forzar descarga
+  );
+}
   /**
    * Eliminar archivo
    */
@@ -247,23 +280,43 @@ export class ArchivoService {
    * Método de conveniencia para obtener la URL desde una respuesta de upload
    */
   obtenerUrlDesdeRespuesta(respuesta: UploadResponse): string {
+  try {
     // Parsear la URL relativa de la respuesta
     const urlRelativa = respuesta.url.split('?')[0]; // Remover query params si existen
     const partes = urlRelativa.split('/');
     
-    const tipoUsuario = partes[2];
+    // Validar estructura
+    if (partes.length < 7) {
+      console.error('❌ URL con formato inválido:', respuesta.url);
+      return respuesta.url; // Retornar URL original como fallback
+    }
+    
+    const tipoUsuario = partes[2] as 'users' | 'admins' | 'users-premium';
     const usuarioId = parseInt(partes[3]);
     const proyectoId = parseInt(partes[4]);
-    const tipo = partes[5];
+    const tipo = partes[5] as 'portadas' | 'assets';
     const nombreArchivo = partes[6];
 
-    return this.obtenerUrlArchivo(
-      tipoUsuario as any,
+    console.log('📊 Construyendo URL desde respuesta:', {
+      tipoUsuario,
       usuarioId,
       proyectoId,
-      tipo as any,
+      tipo,
       nombreArchivo,
-      respuesta.esPlantilla
+      esPlantilla: respuesta.esPlantilla
+    });
+
+    return this.obtenerUrlArchivo(
+      tipoUsuario,
+      usuarioId,
+      proyectoId,
+      tipo,
+      nombreArchivo,
+      respuesta.esPlantilla,
+      false // No forzar descarga
     );
+  } catch (error) {
+    console.error('❌ Error construyendo URL desde respuesta:', error);
+    return respuesta.url; // Retornar URL original como fallback
   }
-}
+}}

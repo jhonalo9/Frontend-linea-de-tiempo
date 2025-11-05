@@ -8,6 +8,7 @@ import { AdminTemplateService } from '../../../features/admin/template-editor/ad
 import { AuthService } from '../../../core/services/auth.service';
 import { VerticalHeaderComponent } from '../vertical-header/vertical-header.component';
 import { ArchivoService } from '../../../core/services/archivo.service';
+import { PlantillaService } from '../../../core/services/plantilla.service';
 
 @Component({
   selector: 'app-gestion-plantillas',
@@ -20,12 +21,13 @@ export class GestionPlantillasComponent implements OnInit {
  // Listas de plantillas
   misPlantillas: TemplateListItem[] = [];
   plantillasPublicas: TemplateListItem[] = [];
+  plantillasPrivadas: TemplateListItem[] = [];
   todasPlantillas: TemplateListItem[] = [];
   
   // Estados
   cargando: boolean = false;
   filtro: string = '';
-  vista: 'mis-plantillas' | 'publicas' | 'todas' = 'mis-plantillas';
+  vista: 'mis-plantillas' | 'publicas' | 'privadas' | 'todas' = 'mis-plantillas';
   esAdmin: boolean = false;
   
   // Plantilla seleccionada para acciones
@@ -33,6 +35,7 @@ export class GestionPlantillasComponent implements OnInit {
 
   constructor(
     private templateListService: AdminTemplateService,
+    private plantillaService:PlantillaService,
     private authService: AuthService,
     private archivoService: ArchivoService,
     private router: Router
@@ -114,6 +117,14 @@ export class GestionPlantillasComponent implements OnInit {
 
     // Actualizar plantillasPublicas si están cargadas
     this.plantillasPublicas.forEach(plantilla => {
+      const vecesUsada = this.vecesUsadaMap.get(plantilla.id) || 0;
+      if (plantilla.metadatos) {
+        plantilla.metadatos.vecesUsada = vecesUsada;
+      }
+    });
+
+    // Actualizar plantillasPrivadas si están cargadas
+    this.plantillasPrivadas.forEach(plantilla => {
       const vecesUsada = this.vecesUsadaMap.get(plantilla.id) || 0;
       if (plantilla.metadatos) {
         plantilla.metadatos.vecesUsada = vecesUsada;
@@ -219,12 +230,20 @@ private parsearConfiguracionVisual(data: any): any {
   /**
    * Cargar plantillas públicas
    */
-  async cargarPlantillasPublicas(): Promise<void> {
+   async cargarPlantillasPublicas(): Promise<void> {
     try {
       this.cargando = true;
-      this.plantillasPublicas = await lastValueFrom(
+      
+      // 🆕 CARGAR VECES USADA
+      await this.cargarVecesUsadaPlantillas();
+      
+      const plantillasRaw = await lastValueFrom(
         this.templateListService.getPlantillasPublicas()
       );
+      
+      // 🔧 NORMALIZAR estructura del backend
+      this.plantillasPublicas = plantillasRaw.map(plantilla => this.normalizarPlantilla(plantilla));
+      
       console.log('✅ Plantillas públicas cargadas:', this.plantillasPublicas.length);
     } catch (error) {
       console.error('❌ Error cargando plantillas públicas:', error);
@@ -235,32 +254,68 @@ private parsearConfiguracionVisual(data: any): any {
   }
 
   /**
-   * Cargar todas las plantillas (solo admin)
+   * Cargar plantillas privadas
    */
-  async cargarTodasPlantillas(): Promise<void> {
-    if (!this.esAdmin) {
-      this.mostrarError('No tienes permisos para ver todas las plantillas');
-      return;
-    }
-
+   async cargarPlantillasPrivadas(): Promise<void> {
     try {
       this.cargando = true;
-      this.todasPlantillas = await lastValueFrom(
-        this.templateListService.getTodasPlantillas()
+      
+      // 🆕 CARGAR VECES USADA
+      await this.cargarVecesUsadaPlantillas();
+      
+      const plantillasRaw = await lastValueFrom(
+        this.templateListService.getMisPlantillas()
       );
-      console.log('✅ Todas las plantillas cargadas:', this.todasPlantillas.length);
+      
+      // 🔧 FILTRAR solo las plantillas privadas
+      const plantillasPrivadasRaw = plantillasRaw.filter(p => !p.esPublica);
+      this.plantillasPrivadas = plantillasPrivadasRaw.map(plantilla => this.normalizarPlantilla(plantilla));
+      
+      console.log('✅ Plantillas privadas cargadas:', this.plantillasPrivadas.length);
     } catch (error) {
-      console.error('❌ Error cargando todas las plantillas:', error);
-      this.mostrarError('Error al cargar todas las plantillas');
+      console.error('❌ Error cargando plantillas privadas:', error);
+      this.mostrarError('Error al cargar las plantillas privadas');
     } finally {
       this.cargando = false;
     }
   }
 
   /**
-   * Cambiar vista entre mis plantillas, públicas y todas (admin)
+   * Cargar todas las plantillas (solo admin)
    */
-  cambiarVista(vista: 'mis-plantillas' | 'publicas' | 'todas'): void {
+  async cargarTodasPlantillas(): Promise<void> {
+  if (!this.esAdmin) {
+    this.mostrarError('No tienes permisos para ver todas las plantillas');
+    return;
+  }
+
+  try {
+    this.cargando = true;
+    
+    // 🆕 CARGAR PRIMERO LAS VECES USADA
+    await this.cargarVecesUsadaPlantillas();
+    
+    // Cargar y normalizar plantillas
+    const plantillasRaw = await lastValueFrom(
+      this.templateListService.getTodasPlantillas()
+    );
+    
+    // 🔧 NORMALIZAR todas las plantillas
+    this.todasPlantillas = plantillasRaw.map(plantilla => this.normalizarPlantilla(plantilla));
+    
+    console.log('✅ Todas las plantillas cargadas:', this.todasPlantillas.length);
+  } catch (error) {
+    console.error('❌ Error cargando todas las plantillas:', error);
+    this.mostrarError('Error al cargar todas las plantillas');
+  } finally {
+    this.cargando = false;
+  }
+}
+
+  /**
+   * Cambiar vista entre mis plantillas, públicas, privadas y todas (admin)
+   */
+  cambiarVista(vista: 'mis-plantillas' | 'publicas' | 'privadas' | 'todas'): void {
     this.vista = vista;
     this.filtro = '';
     
@@ -270,6 +325,9 @@ private parsearConfiguracionVisual(data: any): any {
         break;
       case 'publicas':
         this.cargarPlantillasPublicas();
+        break;
+      case 'privadas':
+        this.cargarPlantillasPrivadas();
         break;
       case 'todas':
         this.cargarTodasPlantillas();
@@ -289,6 +347,9 @@ private parsearConfiguracionVisual(data: any): any {
         break;
       case 'publicas':
         lista = this.plantillasPublicas;
+        break;
+      case 'privadas':
+        lista = this.plantillasPrivadas;
         break;
       case 'todas':
         lista = this.todasPlantillas;
@@ -426,6 +487,9 @@ private parsearConfiguracionVisual(data: any): any {
       case 'publicas':
         this.cargarPlantillasPublicas();
         break;
+      case 'privadas':
+        this.cargarPlantillasPrivadas();
+        break;
       case 'todas':
         this.cargarTodasPlantillas();
         break;
@@ -550,31 +614,28 @@ private parsearConfiguracionVisual(data: any): any {
    * Obtener URL de la imagen (thumbnail o portada)
    */
    getImagenPlantilla(plantilla: TemplateListItem): string {
-    // Si ya tiene portadaUrl completa
-    if (plantilla.metadatos?.portadaUrl) {
-      return plantilla.metadatos.portadaUrl;
-    }
-    
-    // Si tiene thumbnail completo
-    if (plantilla.metadatos?.thumbnail) {
-      return plantilla.metadatos.thumbnail;
-    }
-    
-    // Si tiene un nombre de archivo de portada, construir la URL
-    if (plantilla.metadatos?.portada) {
-      const usuarioActual = this.authService.getCurrentUser();
-      if (usuarioActual?.id) {
-        return this.archivoService.obtenerUrlPortadaPlantillaAdmin(
-          usuarioActual.id,
-          plantilla.id,
-          plantilla.metadatos.portada
-        );
-      }
-    }
-    
-    // Imagen por defecto
-    return 'assets/images/placeholder-template.png';
+  // Si ya tiene portadaUrl completa
+  if (plantilla.metadatos?.portadaUrl) {
+    return plantilla.metadatos.portadaUrl;
   }
+  
+  // Si tiene thumbnail completo
+  if (plantilla.metadatos?.thumbnail) {
+    return plantilla.metadatos.thumbnail;
+  }
+  
+  // Si tiene un nombre de archivo de portada, construir la URL
+  if (plantilla.metadatos?.portada && plantilla.creadoPorId) {
+    return this.archivoService.obtenerUrlPortadaPlantillaAdmin(
+      plantilla.creadoPorId,  // ✅ Usa el ID del creador de la plantilla
+      plantilla.id,
+      plantilla.metadatos.portada
+    );
+  }
+  
+  // Imagen por defecto
+  return 'assets/images/placeholder-template.png';
+}
 
 
   obtenerUrlPortadaPlantilla(plantillaId: number, nombreArchivo: string): string {

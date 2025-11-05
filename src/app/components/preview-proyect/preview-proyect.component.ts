@@ -34,9 +34,9 @@ export class PreviewProyectComponent {
       this.plantillaNombre = proyectoTemporal.plantillaData.nombre || 
                             proyectoTemporal.plantillaData.titulo || 
                             'Plantilla seleccionada';
-      console.log('📋 Plantilla detectada:', this.plantillaNombre);
+      //console.log('Plantilla detectada:', this.plantillaNombre);
     } else {
-      console.log('⚠️ No hay plantilla seleccionada');
+      console.log('No hay plantilla seleccionada');
     }
   }
 
@@ -61,12 +61,6 @@ export class PreviewProyectComponent {
 
     // ✅ DEBUG: Verificar datos antes de navegar
     const datosFinales = this.proyectoService.getProyectoTemporal();
-    console.log('📊 Datos completos antes de navegar al editor:', {
-      titulo: datosFinales?.titulo,
-      descripcion: datosFinales?.descripcion,
-      tienePlantilla: !!datosFinales?.plantillaData,
-      nombrePlantilla: datosFinales?.plantillaData?.nombre
-    });
 
     // Redirigir al editor
     this.router.navigate(['/editor']);

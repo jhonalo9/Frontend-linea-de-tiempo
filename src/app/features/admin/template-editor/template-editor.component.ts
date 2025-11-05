@@ -1578,7 +1578,7 @@ private getConfiguracionPorDefecto(tipo: ElementoEvento['tipo']): any {
     imagen: {
       forma: 'rectangulo' as FormaImagen,
       borderRadius: 0,
-      stroke: '#3498db',
+      stroke: '#141515ff',
       strokeWidth: 2,
       objectFit: 'cover' as const
     },
@@ -1608,7 +1608,7 @@ private getConfiguracionPorDefecto(tipo: ElementoEvento['tipo']): any {
       texto: 'Personaje importante',
       fontSize: 12,
       fontFamily: 'Arial',
-      color: '#8e44ad',
+      color: '#555555ff',
       textAlign: 'left' as const,
       fontWeight: 'normal'
     },
@@ -1625,7 +1625,7 @@ private getConfiguracionPorDefecto(tipo: ElementoEvento['tipo']): any {
     contenedor: {
       forma: 'rectangulo' as const,
       fill: '#ffffff',
-      stroke: '#3498db',
+      stroke: '#0b0b0bff',
       strokeWidth: 2,
       cornerRadius: 4
     },

@@ -1,22 +1,20 @@
-import { Component, OnInit,inject } from '@angular/core';
+import { Component, OnInit,OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService, LoginRequest } from '../../core/services/auth.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { environment } from '../../environment/environment';
+import { Subscription } from 'rxjs';
 
 declare var google: any;
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
-  imports: [
-   
-    FormsModule ,CommonModule,ReactiveFormsModule, RouterModule
-  ],
+  imports: [FormsModule ,CommonModule,ReactiveFormsModule, RouterModule],
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit,OnDestroy {
 
  credentials: LoginRequest = {
     email: '',
@@ -28,6 +26,17 @@ export class LoginComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
+  rateLimitError = '';
+  private rateLimitSubscription: Subscription;
+
+  // Timer para mostrar cuenta regresiva
+  retryAfterSeconds: number = 0;
+  private countdownInterval: any;
+
+  get hasRateLimitError(): boolean {
+    return this.rateLimitError !== '';
+  }
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -37,11 +46,25 @@ export class LoginComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+    // Suscribirse a los errores de rate limiting
+    this.rateLimitSubscription = this.authService.rateLimitError$.subscribe(
+      error => {
+        this.rateLimitError = error;
+        this.startCountdown();
+      }
+    );
   }
 
   //CON GOOGLE
   ngOnInit(): void {
      this.initializeGoogleSignIn();
+  }
+
+  ngOnDestroy(): void {
+    if (this.rateLimitSubscription) {
+      this.rateLimitSubscription.unsubscribe();
+    }
+    this.clearCountdown();
   }
 
    private initializeGoogleSignIn(): void {
@@ -53,6 +76,43 @@ export class LoginComponent implements OnInit {
       script.defer = true;
       document.head.appendChild(script);
     }
+  }
+
+
+
+  private startCountdown(): void {
+    this.clearCountdown();
+    
+    // Intentar extraer el tiempo de espera del mensaje de error
+    const match = this.rateLimitError.match(/Intenta de nuevo en (\d+) segundos/);
+    if (match && match[1]) {
+      this.retryAfterSeconds = parseInt(match[1], 10);
+      
+      this.countdownInterval = setInterval(() => {
+        if (this.retryAfterSeconds > 0) {
+          this.retryAfterSeconds--;
+        } else {
+          this.clearCountdown();
+          this.rateLimitError = '';
+          this.authService.clearRateLimitError();
+        }
+      }, 1000);
+    }
+  }
+
+  private clearCountdown(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
+
+   // Método para formatear el tiempo restante
+  getFormattedCountdown(): string {
+    const minutes = Math.floor(this.retryAfterSeconds / 60);
+    const seconds = this.retryAfterSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
    onGoogleLogin(): void {
@@ -115,9 +175,9 @@ export class LoginComponent implements OnInit {
     this.authService.login(this.loginForm.value).subscribe({
       next: (res) => {
         this.isLoading = false;
-        console.log('Respuesta login:', res);
+        //console.log('Respuesta login:', res);
         
-        // ✅ CORREGIDO: Acceder al rol a través de usuario.rol
+        // CORREGIDO: Acceder al rol a través de usuario.rol
         if (res.usuario.rol === 'ADMIN') { // ← Cambiado de 'admin' a 'ADMIN' (mayúsculas)
           this.router.navigate(['/admin/home']);
         } else {
@@ -128,8 +188,10 @@ export class LoginComponent implements OnInit {
         this.isLoading = false;
         console.error('Error en login', err);
         
-        // Manejo mejorado de errores
-        if (err.status === 401) {
+        if (err.status === 429) {
+          // El error 429 ya se maneja en el servicio
+          this.rateLimitError = err.error?.message || 'Demasiados intentos. Por favor, espera un momento.';
+        } else if (err.status === 401) {
           this.errorMessage = 'Credenciales inválidas';
         } else if (err.status === 0) {
           this.errorMessage = 'Error de conexión con el servidor';

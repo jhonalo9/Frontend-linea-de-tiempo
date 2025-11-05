@@ -62,50 +62,58 @@ export class MisFavoritosComponent implements OnInit, OnDestroy {
       });
   }
 
-  cargarInformacionCompletaPlantillas(favoritos: FavoritoResponseDTO[]): void {
-    if (favoritos.length === 0) {
-      this.plantillasFavoritas = [];
-      this.cargando = false;
-      return;
-    }
+ cargarInformacionCompletaPlantillas(favoritos: FavoritoResponseDTO[]): void {
+  if (favoritos.length === 0) {
+    this.plantillasFavoritas = [];
+    this.cargando = false;
+    return;
+  }
 
-    // Crear un array de observables para cargar la información completa de cada plantilla
-    const requests = favoritos.map(favorito => 
-      this.plantillaService.getPlantillaById(favorito.plantillaId).pipe(
-        catchError(error => {
-          console.error(`Error cargando plantilla ${favorito.plantillaId}:`, error);
-          // Retornar un objeto con la información básica si falla
-          return of({
-            id: favorito.plantillaId,
-            nombre: 'Plantilla no disponible',
-            descripcion: 'No se pudo cargar la información',
-            data: undefined,
-            favorito: true,
-            fechaAgregadoFavorito: favorito.fechaAgregado
-          });
-        })
-      )
-    );
+  const requests = favoritos.map(favorito => 
+    this.plantillaService.getPlantillaById(favorito.plantillaId).pipe(
+      catchError(error => {
+        console.error(`Error cargando plantilla ${favorito.plantillaId}:`, error);
+        return of({
+          id: favorito.plantillaId,
+          nombre: 'Plantilla no disponible',
+          descripcion: 'No se pudo cargar la información',
+          data: undefined,
+          favorito: true,
+          fechaAgregadoFavorito: favorito.fechaAgregado
+        });
+      })
+    )
+  );
 
-    // Ejecutar todas las requests en paralelo
-    forkJoin(requests)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (plantillasCompletas: any[]) => {
-          this.plantillasFavoritas = plantillasCompletas.map((plantilla, index) => ({
+  forkJoin(requests)
+    .pipe(takeUntil(this.destroy$))
+    .subscribe({
+      next: (plantillasCompletas: any[]) => {
+        // ✅ PROCESAR plantillas igual que FullPlantillasComponent
+        this.plantillasFavoritas = plantillasCompletas.map((plantilla, index) => {
+          // Parsear data si no existe o está en formato string
+          const dataParsed = this.plantillaService.parsePlantillaData(plantilla);
+          const portadaUrl = dataParsed?.portadaUrl || dataParsed?.configuracionVisual?.portadaUrl;
+          
+          return {
             ...plantilla,
+            data: dataParsed,  // ✅ Asegurar que data está parseada
+            portadaUrl: portadaUrl,
             favorito: true,
             fechaAgregadoFavorito: favoritos[index].fechaAgregado
-          }));
-          this.cargando = false;
-        },
-        error: (error) => {
-          console.error('Error al cargar información de plantillas:', error);
-          this.error = 'Error al cargar la información de las plantillas.';
-          this.cargando = false;
-        }
-      });
-  }
+          };
+        });
+        
+        console.log('✅ Plantillas favoritas procesadas:', this.plantillasFavoritas.length);
+        this.cargando = false;
+      },
+      error: (error) => {
+        console.error('Error al cargar información de plantillas:', error);
+        this.error = 'Error al cargar la información de las plantillas.';
+        this.cargando = false;
+      }
+    });
+}
 
   obtenerContadorFavoritos(): void {
     this.favoritoService.obtenerContadorFavoritos()
@@ -236,39 +244,30 @@ export class MisFavoritosComponent implements OnInit, OnDestroy {
     this.plantillaSeleccionada = null;
   }
 
-  // Navegación
-  /*usarPlantilla(plantilla: any): void {
-    if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/usuario/descripcion-proyect'], { 
-        state: { plantilla: plantilla } 
-      });
-    } else {
-      this.router.navigate(['/login']);
-    }
-  }*/
+
 
   usarPlantilla(plantilla: any): void {
+  // Asegurar que data está parseada
+  const dataParsed = plantilla.data || this.plantillaService.parsePlantillaData(plantilla);
   
   const plantillaProcesada = {
     ...plantilla,
-    data: plantilla.data || this.plantillaService.parsePlantillaData(plantilla)
+    data: dataParsed
   };
-  // ✅ USAR NUEVO MÉTODO con interfaz correcta
   this.proyectoService.setProyectoTemporal({
-    titulo: '', // Se llenará en crear-proyecto
+    titulo: '',
     descripcion: '',
     plantillaId: plantilla.id,
-    plantillaData: plantillaProcesada // ← Guardar plantilla completa
-  });
-if (this.authService.isLoggedIn()) {
-  // Redirigir al formulario
-  this.router.navigate(['/usuario/descripcion-proyect'], {
-    queryParams: { plantillaId: plantilla.id }
+    plantillaData: plantillaProcesada
   });
 
+  if (this.authService.isLoggedIn()) {
+    this.router.navigate(['/usuario/descripcion-proyect'], {
+      queryParams: { plantillaId: plantilla.id }
+    });
   } else {
-      this.router.navigate(['/login']);
-    }
+    this.router.navigate(['/login']);
+  }
 }
 
 

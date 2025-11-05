@@ -266,7 +266,7 @@
 
 
 <!-- Selector de plantillas -->
-<div *ngIf="showTemplateSelector" class="modal-overlay">
+<!--<div *ngIf="showTemplateSelector" class="modal-overlay">
   <div class="modal-content">
     <h3>Seleccionar Plantilla</h3>
     <div class="templates-list">
@@ -282,56 +282,8 @@
       Cancelar
     </button>
   </div>
-</div>
-
-
-
-
-
-<!-- 
-<div class="section">
-  <h4>📏 Forma de Línea</h4>
-  <select (change)="changeTimelineDesign($event)" class="form-select">
-    <option value="">Seleccionar forma...</option>
-    <option *ngFor="let design of timelineDesigns" 
-            [value]="design.id"
-            [selected]="currentTimelineDesign.id === design.id">
-      {{design.name}}
-    </option>
-  </select>
-  
-
-  <div *ngIf="currentTimelineDesign" class="timeline-info">
-    <small class="text-muted">
-      {{currentTimelineDesign.description}}
-      <br>
-      <strong>Tipo: {{getLayoutTypeName(currentTimelineDesign.layout.type)}}</strong>
-    </small>
-  </div>
 </div>-->
 
-
-
-<!-- 
-<div class="section">
-  <h4>🎨 Diseño de Eventos</h4>
-  <select (change)="changeEventDesign($event)" class="form-select">
-    <option value="">Seleccionar diseño...</option>
-    <option *ngFor="let design of eventDesigns" 
-            [value]="design.id"
-            [selected]="currentEventDesign.id === design.id">
-      {{design.name}}
-    </option>
-  </select>
-  
-  <div *ngIf="currentEventDesign" class="design-info">
-    <small class="text-muted">
-      {{currentEventDesign.description}}
-      <br>
-      <strong>{{currentEventDesign.elements.length}} elementos</strong>
-    </small>
-  </div>
-</div>-->
 
 
 
@@ -422,7 +374,7 @@
           </div>
           <div class="summary-item">
             <span class="summary-label">Portada:</span>
-            <span class="summary-value">✅ Automática</span>
+            <span class="summary-value">Automática</span>
           </div>
         </div>
       </div>
@@ -460,25 +412,6 @@
 </div>
 
 
-
-
-
-
-
-<!--<div class="section">
-  <h4>📁 Importar Plantilla</h4>
-  
-  <input 
-    type="file" 
-    id="import-plantilla" 
-    accept=".json" 
-    (change)="importarPlantillaDesdeArchivo($event)"
-    style="display: none">
-  
-  <button class="btn-outline full" (click)="seleccionarArchivoPlantilla()">
-    <i class="fa-solid fa-file-import"></i> Importar Plantilla JSON
-  </button>
-</div>-->
 
 
 

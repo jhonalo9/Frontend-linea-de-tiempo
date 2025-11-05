@@ -49,6 +49,7 @@ interface TimelineEvent {
   image?: string ;
   link?: string;
   zonaDesign?: any;
+  orden?:any
 }
 
 
@@ -108,8 +109,7 @@ export class EditorComponent implements OnInit {
   backgroundColor: string = '#ffffffff';
   showEventModal: boolean = false;
   showEditModal: boolean = false;
-  showTemplateSelector: boolean = false;
-  autoUpdateYears: boolean = true;
+  autoUpdateYears: boolean = false;
 
 showSaveProjectModal: boolean = false;
   proyectoGuardado: boolean = false;
@@ -153,8 +153,7 @@ showSaveProjectModal: boolean = false;
     link: ''
   };
 
-  // Plantillas
-  availableTemplates: TimelineTemplate[] = [];
+  
 
 
 
@@ -177,7 +176,7 @@ public originalMouseY: number = 0;
 public originalCanvasWidth: number = 0;
 public originalCanvasHeight: number = 0;
 
-  containerSize: number = 90;
+  containerSize: number = 70;
  isPresentacionMode: boolean = false;
 
 
@@ -322,13 +321,6 @@ private adjustStageToFullscreen(): void {
   
   this.stage.batchDraw();
   
-  console.log('🖥️ Modo pantalla completa activado:', {
-    screenWidth,
-    screenHeight,
-    scale,
-    offsetX,
-    offsetY
-  });
 }
 
 
@@ -343,71 +335,8 @@ private restoreOriginalSize(): void {
   
   this.stage.batchDraw();
   
-  console.log('📐 Tamaño original restaurado');
 }
 
-  // Entrar en modo presentación
-  private enterPresentacionMode(): void {
-  // Agregar clase al body
-  document.body.classList.add('presentacion-mode');
-  
-  // Ocultar scroll
-  document.body.style.overflow = 'hidden';
-  
-  // Ajustar el stage al tamaño completo de la pantalla
-  setTimeout(() => {
-    if (this.stage) {
-      this.stage.width(window.innerWidth);
-      this.stage.height(window.innerHeight);
-      
-      // Centrar el contenido
-      const scale = Math.min(
-        window.innerWidth / this.canvasWidth,
-        window.innerHeight / this.canvasHeight
-      );
-      
-      this.stage.scale({ x: scale, y: scale });
-      this.stage.position({
-        x: (window.innerWidth - this.canvasWidth * scale) / 2,
-        y: (window.innerHeight - this.canvasHeight * scale) / 2
-      });
-      
-      this.stage.batchDraw();
-    }
-  }, 100);
-
-  // Escuchar tecla Escape
-  document.addEventListener('keydown', this.handleEscapeKey);
-}
-
-  // Salir del modo presentación
-  private exitPresentacionMode(): void {
-  // Remover clase del body
-  document.body.classList.remove('presentacion-mode');
-  
-  // Restaurar scroll
-  document.body.style.overflow = '';
-  
-  // Restaurar tamaño original del stage
-  setTimeout(() => {
-    if (this.stage) {
-      this.stage.width(this.canvasWidth);
-      this.stage.height(this.canvasHeight);
-      this.stage.scale({ x: 1, y: 1 });
-      this.stage.position({ x: 0, y: 0 });
-      this.stage.batchDraw();
-    }
-  }, 100);
-
-  // Remover event listener
-  document.removeEventListener('keydown', this.handleEscapeKey);
-}
-  // Manejar tecla Escape
-  private handleEscapeKey = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && this.isPresentacionMode) {
-    this.togglePresentacion();
-  }
-}
 
 
 public eventDesigns: EventDesign[] = [];
@@ -494,7 +423,6 @@ currentEventDesign!: EventDesign;
     this.initKonva();
     this.calculateYearRange();
     this.renderTimelineEvents();
-    this.loadTemplates(); // Cargar plantillas al inicializar
     this.cargarPlantillasDiseno();
     this.crearElementosProyecto()
 
@@ -509,16 +437,15 @@ currentEventDesign!: EventDesign;
     
     if (proyectoId) {
       const id = Number(proyectoId);
-      console.log('🔄 Proyecto ID desde URL:', id);
       
       if (id && id > 0) {
         this.cargarProyecto(id);
       } else {
-        console.error('❌ ID de proyecto inválido en URL:', proyectoId);
+        console.error('ID de proyecto inválido en URL:', proyectoId);
         alert('ID de proyecto inválido');
       }
     } else {
-      console.log('ℹ️ No hay proyecto en URL - modo nuevo proyecto');
+      console.log('No hay proyecto en URL - modo nuevo proyecto');
       // Aquí puedes inicializar un proyecto nuevo si es necesario
     }
   });
@@ -534,8 +461,6 @@ currentEventDesign!: EventDesign;
     return;
   }
 
-  console.log('🎨 Cargando datos temporales COMPLETOS:', proyectoTemporal);
-  console.log('🔍 Estructura de plantillaData:', proyectoTemporal.plantillaData);
 
   // Establecer título y descripción
   this.proyectoNombre = proyectoTemporal.titulo || 'Mi Proyecto';
@@ -544,33 +469,30 @@ currentEventDesign!: EventDesign;
   // Actualizar elementos de texto en el canvas
   this.crearElementosProyecto();
 
-  // ✅ Cargar plantilla si existe
+  // Cargar plantilla si existe
   if (proyectoTemporal.plantillaData) {
-    console.log('📥 Aplicando plantilla:', proyectoTemporal.plantillaData.nombre);
     
     // ✅ DEBUG: Mostrar estructura completa de data
-    if (proyectoTemporal.plantillaData.data) {
+   /* if (proyectoTemporal.plantillaData.data) {
       console.log('📊 Estructura de data:', {
         tieneLineaDeTiempo: !!proyectoTemporal.plantillaData.data.lineaDeTiempo,
         tieneZonasEventos: !!proyectoTemporal.plantillaData.data.zonasEventos,
         tieneElementosDecorativos: !!proyectoTemporal.plantillaData.data.elementosDecorativos,
         dataCompleta: proyectoTemporal.plantillaData.data
       });
-    }
+    }*/
     
     this.aplicarPlantillaCompleta(proyectoTemporal.plantillaData);
   } else {
-    console.log('⚪ No hay plantilla para aplicar');
+    console.log(' No hay plantilla para aplicar');
   }
 }
 
 
 private aplicarPlantillaCompleta(plantillaData: any): void {
   try {
-    console.log('📥 Aplicando plantilla completa:', plantillaData);
-    console.log('🔍 Estructura de data:', plantillaData.data);
 
-    // ✅ VALIDAR DATA EXISTA
+    //VALIDAR DATA EXISTA
     if (!plantillaData.data) {
       throw new Error('plantillaData.data es undefined');
     }
@@ -580,7 +502,6 @@ private aplicarPlantillaCompleta(plantillaData: any): void {
 
     // 1. Cargar configuración visual - CORREGIDO: usar data directamente
     if (plantillaData.data.canvasWidth && plantillaData.data.canvasHeight) {
-      console.log('🎨 Cargando configuración de canvas...');
       this.cargarConfiguracionVisual({
         canvasWidth: plantillaData.data.canvasWidth,
         canvasHeight: plantillaData.data.canvasHeight,
@@ -590,7 +511,6 @@ private aplicarPlantillaCompleta(plantillaData: any): void {
 
     // 2. Cargar diseño de línea de tiempo - CORREGIDO: buscar en data.lineaDeTiempo
     if (plantillaData.data.lineaDeTiempo) {
-      console.log('🔧 Aplicando línea de tiempo:', plantillaData.data.lineaDeTiempo);
       this.convertirLineaTiempoConfig(plantillaData.data.lineaDeTiempo);
       this.renderTimelineBase();
     } else {
@@ -600,22 +520,16 @@ private aplicarPlantillaCompleta(plantillaData: any): void {
 
     // 3. Cargar elementos decorativos - CORREGIDO: buscar en data.elementosDecorativos
     if (plantillaData.data.elementosDecorativos) {
-      console.log('🎨 Aplicando elementos decorativos:', plantillaData.data.elementosDecorativos.length);
       this.cargarElementosDecorativos(plantillaData.data.elementosDecorativos);
     }
 
     // 4. Guardar zonas para eventos futuros - CORREGIDO: buscar en data.zonasEventos
     if (plantillaData.data.zonasEventos) {
-      console.log('📍 Guardando zonas de eventos:', plantillaData.data.zonasEventos.length);
       this.guardarZonasPlantilla(plantillaData.data.zonasEventos);
     }
 
-    console.log('✅ Plantilla aplicada correctamente');
-    this.mostrarMensaje('✅ Plantilla cargada. Ahora puedes agregar eventos.');
-
   } catch (error) {
-    console.error('❌ Error aplicando plantilla:', error);
-    console.log('🔄 Usando diseño por defecto como fallback');
+    console.error('Error aplicando plantilla:', error);
     this.renderTimelineBase();
     this.mostrarMensaje('Plantilla cargada con configuración básica');
   }
@@ -630,63 +544,63 @@ private aplicarPlantillaCompleta(plantillaData: any): void {
   }
 
 
-  crearTituloProyecto(): void {
-    // Eliminar título anterior si existe
-    if (this.proyectoTitleElement) {
-      this.proyectoTitleElement.destroy();
-    }
-
-    const proyectoTemporal = this.proyectoService.getProyectoTemporal();
-    const titulo = proyectoTemporal?.titulo || 'Mi Proyecto';
-
-    this.proyectoTitleElement = new Konva.Text({
-      x: 50,
-      y: 30,
-      text: titulo,
-      fontSize: 24,
-      fontFamily: 'Arial',
-      fill: '#2c3e50',
-      fontStyle: 'bold',
-      draggable: true,
-      width: this.stage.width() - 100,
-      align: 'center'
-    });
-
-    // Configurar eventos de doble clic
-    this.configurarEventosEdicion(this.proyectoTitleElement, 'titulo');
-
-    this.mainLayer.add(this.proyectoTitleElement);
-    this.mainLayer.batchDraw();
+ crearTituloProyecto(): void {
+  // Eliminar título anterior si existe
+  if (this.proyectoTitleElement) {
+    this.proyectoTitleElement.destroy();
   }
+
+  // ✅ CORREGIDO: Usar SIEMPRE this.proyectoNombre
+  const titulo = this.proyectoNombre || 'Mi Proyecto';
+
+  this.proyectoTitleElement = new Konva.Text({
+    x: 50,
+    y: 30,
+    text: titulo,
+    fontSize: 24,
+    fontFamily: 'Arial',
+    fill: '#2c3e50',
+    fontStyle: 'bold',
+    draggable: true,
+    width: this.stage.width() - 100,
+    align: 'center'
+  });
+
+  // Configurar eventos de doble clic
+  this.configurarEventosEdicion(this.proyectoTitleElement, 'titulo');
+
+  this.mainLayer.add(this.proyectoTitleElement);
+  this.mainLayer.batchDraw();
+}
 
 
    crearDescripcionProyecto(): void {
-    // Eliminar descripción anterior si existe
-    if (this.proyectoDescriptionElement) {
-      this.proyectoDescriptionElement.destroy();
-    }
-
-    const proyectoTemporal = this.proyectoService.getProyectoTemporal();
-    const descripcion = proyectoTemporal?.descripcion || 'Descripción del proyecto';
-
-    this.proyectoDescriptionElement = new Konva.Text({
-      x: 50,
-      y: 70,
-      text: descripcion,
-      fontSize: 14,
-      fontFamily: 'Arial',
-      fill: '#5d6d7e',
-      draggable: true,
-      width: this.stage.width() - 100,
-      align: 'center'
-    });
-
-    // Configurar eventos de doble clic
-    this.configurarEventosEdicion(this.proyectoDescriptionElement, 'descripcion');
-
-    this.mainLayer.add(this.proyectoDescriptionElement);
-    this.mainLayer.batchDraw();
+  // Eliminar descripción anterior si existe
+  if (this.proyectoDescriptionElement) {
+    this.proyectoDescriptionElement.destroy();
   }
+
+  // ✅ CORREGIDO: Usar SIEMPRE this.proyectoDescripcion
+  const descripcion = this.proyectoDescripcion || 'Descripción del proyecto';
+
+  this.proyectoDescriptionElement = new Konva.Text({
+    x: 50,
+    y: 70,
+    text: descripcion,
+    fontSize: 14,
+    fontFamily: 'Arial',
+    fill: '#5d6d7e',
+    draggable: true,
+    width: this.stage.width() - 100,
+    align: 'center'
+  });
+
+  // Configurar eventos de doble clic
+  this.configurarEventosEdicion(this.proyectoDescriptionElement, 'descripcion');
+
+  this.mainLayer.add(this.proyectoDescriptionElement);
+  this.mainLayer.batchDraw();
+}
 
   configurarEventosEdicion(textNode: Konva.Text, tipo: 'titulo' | 'descripcion'): void {
     // Evento de doble clic para editar
@@ -886,7 +800,6 @@ async cargarMisProyectos(): Promise<void> {
       );
       
       this.misProyectos = proyectos || [];
-      console.log('📂 Proyectos cargados:', this.misProyectos.length);
       
     } catch (error) {
       console.error('❌ Error cargando proyectos:', error);
@@ -926,7 +839,6 @@ async cargarMisProyectos(): Promise<void> {
 
   cerrarModalPortada(): void {
     this.showPortadaModal = false;
-    //this.portadaArchivo = null;
   }
 
 
@@ -938,10 +850,10 @@ async cargarMisProyectos(): Promise<void> {
 
   onPortadaSelected(event: any): void {
   const file = event.target.files[0];
-  console.log('📁 Archivo seleccionado:', file);
+
   
   if (!file) {
-    console.log('⚠️ No se seleccionó archivo');
+    console.log('No se seleccionó archivo');
     return;
   }
 
@@ -959,13 +871,11 @@ async cargarMisProyectos(): Promise<void> {
 
   // PRIMERO: Guardar el archivo
   this.portadaArchivo = file;
-  console.log(' portadaArchivo establecido:', this.portadaArchivo);
 
   // SEGUNDO: Crear preview (asíncrono)
   const reader = new FileReader();
   reader.onload = (e: any) => {
     this.proyectoPortada = e.target.result;
-    console.log('🖼️ Preview de portada creado');
   };
   reader.onerror = (error) => {
     console.error('❌ Error leyendo archivo para preview:', error);
@@ -1021,35 +931,22 @@ private async eliminarPortadaDelServidor(): Promise<void> {
 private limpiarPortadaLocal(): void {
   this.proyectoPortada = '';
   this.portadaArchivo = null;
-  console.log('🗑️ Portada eliminada localmente');
 }
 
    private async subirPortadaProyecto(usuarioId: number, proyectoId: number): Promise<string> {
-  console.log('🔍 Verificando portadaArchivo:', this.portadaArchivo);
   
   if (!this.portadaArchivo) {
-    console.log('⚠️ No hay portadaArchivo para subir');
     return '';
   }
 
   try {
-    console.log('📤 Iniciando subida de portada...', {
-      usuarioId,
-      proyectoId,
-      archivo: {
-        nombre: this.portadaArchivo.name,
-        tipo: this.portadaArchivo.type,
-        tamaño: this.portadaArchivo.size
-      }
-    });
-
+   
     const tipoUsuario = 'users';
     
     const respuesta = await lastValueFrom(
       this.archivoService.subirPortadaProyectoUser(this.portadaArchivo, usuarioId, proyectoId)
     );
 
-    console.log('✅ Portada subida exitosamente:', respuesta);
     return this.archivoService.obtenerUrlDesdeRespuesta(respuesta);
     
   } catch (error) {
@@ -1074,8 +971,6 @@ private limpiarPortadaLocal(): void {
   private async generarPortadaDesdeProyecto(): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
-      console.log('🖼️ Generando portada automática desde proyecto...');
-      
       this.ocultarElementosTemporales();
       this.stage.batchDraw();
       
@@ -1087,7 +982,7 @@ private limpiarPortadaLocal(): void {
             mimeType: 'image/jpeg'
           });
           
-          console.log('✅ Portada automática generada correctamente');
+          //console.log('Portada automática generada correctamente');
           
           // Convertir data URL a File
           this.portadaArchivo = this.dataURLtoFile(dataURL, `portada-automatica-${Date.now()}.jpg`);
@@ -1114,7 +1009,7 @@ private limpiarPortadaLocal(): void {
 
 private ocultarElementosTemporales(): void {
   try {
-    console.log('👁️ Ocultando elementos temporales...');
+    //console.log('Ocultando elementos temporales...');
     
     // Ocultar todos los transformers (controles de edición)
     this.stage.find('Transformer').forEach((node: Konva.Node) => {
@@ -1123,9 +1018,9 @@ private ocultarElementosTemporales(): void {
       }
     });
     
-    console.log('✅ Elementos temporales ocultados');
+    //console.log('Elementos temporales ocultados');
   } catch (error) {
-    console.error('❌ Error ocultando elementos temporales:', error);
+    console.error(' Error ocultando elementos temporales:', error);
   }
 }
 
@@ -1134,7 +1029,7 @@ private ocultarElementosTemporales(): void {
  */
 private mostrarElementosTemporales(): void {
   try {
-    console.log('👁️ Mostrando elementos temporales...');
+    //console.log('Mostrando elementos temporales...');
     
     // Mostrar todos los transformers
     this.stage.find('Transformer').forEach((node: Konva.Node) => {
@@ -1143,9 +1038,9 @@ private mostrarElementosTemporales(): void {
       }
     });
     
-    console.log('✅ Elementos temporales mostrados');
+   // console.log('✅ Elementos temporales mostrados');
   } catch (error) {
-    console.error('❌ Error mostrando elementos temporales:', error);
+    console.error('Error mostrando elementos temporales:', error);
   }
 }
 
@@ -1252,7 +1147,7 @@ private async procesarImagenesEventos(usuarioId: number, esProyectoNuevo: boolea
       }
       
       // ✅ CASO 3: No hay imagen o imagen vacía → MANTENER
-      console.log(`⚪ Sin imagen para evento ${event.year}`);
+      //console.log(`⚪ Sin imagen para evento ${event.year}`);
       return { ...event, image: event.image || '' };
     })
   );
@@ -1273,12 +1168,10 @@ private async procesarImagenesEventos(usuarioId: number, esProyectoNuevo: boolea
       return;
     }
 
-     const proyectoTemporal = this.proyectoService.getProyectoTemporal();
+    const proyectoTemporal = this.proyectoService.getProyectoTemporal();
     const plantillaId = proyectoTemporal?.plantillaId || null;
 
-    console.log('🔍 Plantilla ID a usar:', plantillaId);
-
-    // ✅ OBTENER PORTADA ANTERIOR SI ES ACTUALIZACIÓN
+    // ✅ PASO 1: OBTENER PORTADA ANTERIOR (solo si es actualización)
     let portadaAnteriorUrl = '';
     if (this.proyectoActualId) {
       try {
@@ -1293,150 +1186,156 @@ private async procesarImagenesEventos(usuarioId: number, esProyectoNuevo: boolea
       }
     }
 
-    // ✅ GENERAR NUEVA PORTADA AUTOMÁTICAMENTE
-    await this.generarPortadaDesdeProyecto();
-
-    // ✅ PROCESAR SOLO IMÁGENES NUEVAS (detectar data URLs)
-    console.log('🔍 Estado actual - proyectoActualId:', this.proyectoActualId);
-    const esProyectoNuevo = !this.proyectoActualId;
-
-    // Para proyectos existentes, subir imágenes nuevas ANTES de crear la estructura
-    let eventosProcesadosInicial: TimelineEvent[];
-    
-    if (!esProyectoNuevo) {
-      // PROYECTO EXISTENTE: Subir nuevas imágenes ahora
-      console.log('📤 Procesando imágenes para proyecto EXISTENTE...');
-      eventosProcesadosInicial = await this.procesarImagenesEventos(usuario.id, esProyectoNuevo);
-    } else {
-      // PROYECTO NUEVO: Mantener data URLs temporalmente
-      console.log('💾 Manteniendo data URLs para proyecto NUEVO (se subirán después)...');
-      eventosProcesadosInicial = [...this.timelineEvents];
+    // ✅ PASO 2: GENERAR PORTADA AUTOMÁTICA (si no hay archivo seleccionado)
+    if (!this.portadaArchivo) {
+      await this.generarPortadaDesdeProyecto();
     }
 
-    // 1. CREAR ESTRUCTURA DE DATOS
+    // ✅ PASO 3: DETERMINAR SI ES PROYECTO NUEVO
+    const esProyectoNuevo = !this.proyectoActualId;
+    console.log(esProyectoNuevo ? '📝 Creando proyecto nuevo...' : '📝 Actualizando proyecto existente...');
+
+    // ✅ PASO 4: PROCESAR IMÁGENES (UNA SOLA VEZ)
+    const eventosProcesados = await this.procesarImagenesEventos(usuario.id, esProyectoNuevo);
+    console.log(`✅ ${eventosProcesados.length} eventos procesados`);
+
+    // ✅ PASO 5: PREPARAR EVENTOS CON ORDEN Y POSICIÓN
+    const eventosConOrden = eventosProcesados.map((event, index) => {
+      const grupoEvento = this.obtenerGrupoEvento(event);
+      
+      return {
+        year: event.year,
+        title: event.title,
+        person: event.person,
+        description: event.description,
+        image: event.image || '',
+        link: event.link || '',
+        orden: index,
+        posicionLibre: grupoEvento ? {
+          x: grupoEvento.x(),
+          y: grupoEvento.y()
+        } : undefined,
+        zonaDesign: (event as any).zonaDesign
+      };
+    });
+
+    // ✅ PASO 6: CREAR/ACTUALIZAR PROYECTO (SIN PORTADA FINAL AÚN)
     const proyectoDataInicial: ProyectoData = {
       metadata: {
         nombre: this.proyectoNombre,
         descripcion: this.proyectoDescripcion || `Proyecto creado desde el editor`,
         fechaExportacion: new Date().toISOString(),
         version: '1.0',
-        totalEventos: eventosProcesadosInicial.length,
-        portadaUrl: ''
+        totalEventos: eventosConOrden.length,
+        portadaUrl: portadaAnteriorUrl // ✅ Mantener la anterior por ahora
       },
       configuracion: {
         backgroundColor: this.backgroundColor,
         minYear: this.minYear,
         maxYear: this.maxYear,
         stageWidth: this.stage.width(),
-        stageHeight: this.stage.height()
+        stageHeight: this.stage.height(),
+        lineaDeTiempo: this.serializarLineaDeTiempo()
       },
-      eventos: eventosProcesadosInicial,
+      eventos: eventosConOrden,
       elementosKonva: this.serializarElementosKonva(),
-      estilos: this.getCurrentStyles()
+      estilos: this.getEstilosBasicos()
     };
 
-    const dataSerializada = this.proyectoService.serializarData(proyectoDataInicial);
-    
     const proyectoRequestInicial: ProyectoRequest = {
       titulo: this.proyectoNombre,
       descripcion: this.proyectoDescripcion,
-      data: dataSerializada,
-      plantillaBaseId: plantillaId 
+      data: this.proyectoService.serializarData(proyectoDataInicial),
+      plantillaBaseId: plantillaId // ✅ Siempre el mismo valor
     };
 
     let proyectoGuardado;
 
     if (esProyectoNuevo) {
-      // Crear proyecto vacío primero
-      console.log('🆕 Creando proyecto vacío...');
+      // Crear proyecto nuevo
       proyectoGuardado = await lastValueFrom(
         this.proyectoService.createProyecto(proyectoRequestInicial)
       );
       this.proyectoActualId = proyectoGuardado.id;
-      console.log('✅ Proyecto vacío creado. ID:', this.proyectoActualId);
+      console.log('✅ Proyecto creado con ID:', this.proyectoActualId);
     } else {
       // Actualizar proyecto existente
-      console.log('📝 Actualizando proyecto existente...');
       proyectoGuardado = await lastValueFrom(
         this.proyectoService.updateProyecto(this.proyectoActualId!, proyectoRequestInicial)
       );
+      console.log('✅ Proyecto actualizado');
     }
 
-    // 2. PROCESAR IMÁGENES SOLO para proyectos nuevos (después de crear el proyecto)
-    let eventosProcesadosFinal: TimelineEvent[];
-    
-    if (esProyectoNuevo) {
-      console.log('🔄 Subiendo imágenes con ID del proyecto nuevo...');
-      eventosProcesadosFinal = await this.procesarImagenesEventos(usuario.id, false);
-    } else {
-      // Para proyectos existentes, las imágenes ya fueron procesadas
-      console.log('✅ Imágenes ya procesadas para proyecto existente');
-      eventosProcesadosFinal = eventosProcesadosInicial;
-    }
+    // ✅ PASO 7: AHORA SÍ, MANEJAR LA PORTADA (con proyectoId garantizado)
+    let portadaUrlFinal = portadaAnteriorUrl;
 
-    // Actualizar textos si existen
-    if (this.proyectoTitleElement) {
-      this.proyectoNombre = this.proyectoTitleElement.text();
-    }
-    if (this.proyectoDescriptionElement) {
-      this.proyectoDescripcion = this.proyectoDescriptionElement.text();
-    }
-
-    // 3. SUBIR PORTADA si existe
-    let portadaUrlFinal = '';
     if (this.portadaArchivo && this.proyectoActualId) {
       try {
         console.log('📤 Subiendo nueva portada...');
         
-        // ✅ PRIMERO: Eliminar portada anterior si existe
-        if (portadaAnteriorUrl) {
-          await this.eliminarPortadaAnterior(portadaAnteriorUrl, usuario.id);
-        }
-        
-        // ✅ SEGUNDO: Subir nueva portada
+        // ✅ PRIMERO: Subir la nueva portada
         portadaUrlFinal = await this.subirPortadaProyecto(usuario.id, this.proyectoActualId);
         console.log('✅ Nueva portada subida:', portadaUrlFinal);
         
+        // ✅ SEGUNDO: Eliminar la anterior (solo si la nueva se subió bien y son diferentes)
+        if (portadaAnteriorUrl && portadaUrlFinal !== portadaAnteriorUrl) {
+          try {
+            await this.eliminarPortadaAnterior(portadaAnteriorUrl, usuario.id);
+            console.log('🗑️ Portada anterior eliminada');
+          } catch (error) {
+            console.warn('⚠️ No se pudo eliminar portada anterior (no crítico):', error);
+          }
+        }
+        
       } catch (error) {
-        console.error('❌ Error manejando portada:', error);
+        console.error('❌ Error subiendo portada:', error);
+        // Si falla la subida, mantener la anterior
+        portadaUrlFinal = portadaAnteriorUrl;
       }
-    } else if (portadaAnteriorUrl && !this.portadaArchivo) {
-      // ✅ CASO: Si había portada pero ahora no se quiere portada, eliminarla
-      try {
-        await this.eliminarPortadaAnterior(portadaAnteriorUrl, usuario.id);
-        console.log('🗑️ Portada anterior eliminada (sin nueva portada)');
-      } catch (error) {
-        console.warn('⚠️ No se pudo eliminar portada anterior:', error);
-      }
+    } else if (!this.portadaArchivo && portadaAnteriorUrl) {
+      // Mantener la anterior si no hay nueva
+      console.log('ℹ️ Manteniendo portada anterior');
+      portadaUrlFinal = portadaAnteriorUrl;
     }
 
-    // 4. ACTUALIZAR el proyecto con las URLs finales
-    const proyectoDataFinal: ProyectoData = {
-      ...proyectoDataInicial,
-      metadata: {
-        ...proyectoDataInicial.metadata,
-        portadaUrl: portadaUrlFinal,
-        totalEventos: eventosProcesadosFinal.length
-      },
-      eventos: eventosProcesadosFinal
-    };
+    // ✅ PASO 8: ACTUALIZAR CON LA PORTADA FINAL (solo si cambió)
+    if (portadaUrlFinal !== portadaAnteriorUrl) {
+      console.log('📝 Actualizando proyecto con nueva portada...');
+      
+      const proyectoDataFinal: ProyectoData = {
+        ...proyectoDataInicial,
+        metadata: {
+          ...proyectoDataInicial.metadata,
+          portadaUrl: portadaUrlFinal
+        }
+      };
 
-    const proyectoRequestFinal: ProyectoRequest = {
+      const proyectoRequestFinal: ProyectoRequest = {
+        titulo: this.proyectoNombre,
+        descripcion: this.proyectoDescripcion,
+        data: this.proyectoService.serializarData(proyectoDataFinal),
+        plantillaBaseId: plantillaId // ✅ Mismo valor
+      };
+
+      await lastValueFrom(
+        this.proyectoService.updateProyecto(this.proyectoActualId!, proyectoRequestFinal)
+      );
+      
+      console.log('✅ Proyecto actualizado con portada');
+    }
+
+    // ✅ PASO 9: FINALIZAR
+    console.log('🎉 Proyecto guardado completamente');
+    console.log('📊 Resumen:', {
+      id: this.proyectoActualId,
       titulo: this.proyectoNombre,
-      descripcion: this.proyectoDescripcion,
-      data: this.proyectoService.serializarData(proyectoDataFinal),
-       plantillaBaseId: proyectoTemporal?.plantillaId || 0 
-    };
-
-    // Actualizar proyecto con datos finales
-    const proyectoActualizado = await lastValueFrom(
-      this.proyectoService.updateProyecto(this.proyectoActualId!, proyectoRequestFinal)
-    );
-
-    console.log('🎉 Proyecto guardado completamente. ID:', this.proyectoActualId);
+      eventos: eventosConOrden.length,
+      portada: portadaUrlFinal || 'Sin portada'
+    });
 
     this.proyectoGuardado = true;
     this.proyectoService.clearProyectoTemporal();
+    this.portadaArchivo = null; // ✅ Limpiar archivo temporal
     
     setTimeout(() => {
       this.cerrarModalGuardarProyecto();
@@ -1458,6 +1357,47 @@ private async procesarImagenesEventos(usuarioId: number, esProyectoNuevo: boolea
     
     alert('Error al guardar el proyecto. Por favor, intenta nuevamente.');
   }
+}
+
+
+private obtenerGrupoEvento(event: TimelineEvent): Konva.Group | null {
+  const grupos = this.mainLayer.find('Group');
+  
+  for (let i = 0; i < grupos.length; i++) {
+    const grupo = grupos[i] as Konva.Group;
+    const eventoAsociado = grupo.getAttr('timelineEvent');
+    
+    if (eventoAsociado && 
+        eventoAsociado.year === event.year && 
+        eventoAsociado.title === event.title) {
+      return grupo;
+    }
+  }
+  
+  return null;
+}
+
+private serializarLineaDeTiempo(): any {
+  const layout = this.currentTimelineDesign.layout;
+  const lineStyle = this.currentTimelineDesign.lineStyle;
+
+  return {
+    tipo: layout.type,
+    designId: this.selectedTimelineDesignId,
+    positionX: layout.positionX,
+    positionY: layout.positionY,
+    amplitude: layout.amplitude,
+    frequency: layout.frequency,
+    intensity: layout.intensity,
+    intensitycurva: layout.intensitycurva,
+    anchoTotal: layout.anchoTotal,
+    turns: layout.turns,
+    estilo: {
+      stroke: lineStyle.stroke,
+      strokeWidth: lineStyle.strokeWidth,
+      lineCap: lineStyle.lineCap
+    }
+  };
 }
 
 
@@ -1520,7 +1460,6 @@ changeTimelineDesign(event: Event): void {
 
   this.mainLayer.batchDraw();
   
-  console.log(`🎨 Línea de tiempo renderizada: ${layout.type}`);
 }
 
   private drawHorizontalTimeline(): void {
@@ -2357,7 +2296,8 @@ private clearResizeHandles(): void {
         minYear: this.minYear,
         maxYear: this.maxYear,
         stageWidth: this.stage.width(),
-        stageHeight: this.stage.height()
+        stageHeight: this.stage.height(),
+        lineaDeTiempo: this.serializarLineaDeTiempo()
       },
       eventos: this.timelineEvents.map(event => ({
         year: event.year,
@@ -2367,7 +2307,7 @@ private clearResizeHandles(): void {
         image: event.image || '' // ← Asegurar que siempre sea string
       })),
       elementosKonva: this.serializarElementosKonva(),
-      estilos: this.getCurrentStyles()
+      estilos: this.getEstilosBasicos()
     };
 
     const proyectoRequest: ProyectoRequest = {
@@ -2390,7 +2330,15 @@ private clearResizeHandles(): void {
     alert('Error al actualizar el proyecto');
   }
 }
-
+private getEstilosBasicos(): any {
+  return {
+    backgroundColor: this.backgroundColor,
+    timelineDesignId: this.selectedTimelineDesignId,
+    eventDesignId: this.currentEventDesign?.id || 'default-with-image',
+    canvasWidth: this.canvasWidth,
+    canvasHeight: this.canvasHeight
+  };
+}
 
   async cargarProyecto(id: number): Promise<void> {
     try {
@@ -2522,7 +2470,7 @@ private clearResizeHandles(): void {
       },
       eventos: eventosProcesados,
       elementosKonva: this.serializarElementosKonva(),
-      estilos: this.getCurrentStyles()
+      estilos: this.getEstilosBasicos()
     };
 
     const proyectoRequest: ProyectoRequest = {
@@ -2603,9 +2551,6 @@ private clearResizeHandles(): void {
 
   private async cargarProyectoDesdeData(proyectoData: ProyectoData, titulo: string, descripcion: string): Promise<void> {
   try {
-    console.log('📥 Iniciando carga de proyecto:', titulo);
-    console.log('📦 Datos del proyecto:', proyectoData);
-    
     // 1. Establecer propiedades básicas
     this.proyectoNombre = titulo;
     this.proyectoDescripcion = descripcion;
@@ -2624,11 +2569,17 @@ private clearResizeHandles(): void {
     this.timelineEvents = [];
     this.limpiarEditorCompletamente();
 
+    if (proyectoData.configuracion.lineaDeTiempo) {
+      this.convertirLineaTiempoConfig(proyectoData.configuracion.lineaDeTiempo);
+    }
+
+    this.extraerYGuardarZonasDeEventos(proyectoData.eventos);
+
     // 4. Cargar configuración básica
     this.backgroundColor = proyectoData.configuracion.backgroundColor;
     this.minYear = proyectoData.configuracion.minYear;
     this.maxYear = proyectoData.configuracion.maxYear;
-    
+
     // Redimensionar canvas según la configuración guardada
     if (proyectoData.configuracion.stageWidth && proyectoData.configuracion.stageHeight) {
       this.canvasWidth = proyectoData.configuracion.stageWidth;
@@ -2639,65 +2590,152 @@ private clearResizeHandles(): void {
     
     this.updateBackgroundColor(this.backgroundColor);
 
-    // ✅ CORREGIDO: Buscar lineaDeTiempo en configuracionVisual
-    const datosCompletos = proyectoData as any;
-    
-    console.log('🔍 Buscando configuración de línea de tiempo...');
-    console.log('📋 configuracionVisual:', datosCompletos.configuracionVisual);
-    
-    if (datosCompletos.configuracionVisual?.lineaDeTiempo) {
-      console.log('✅ Configuración de línea encontrada:', datosCompletos.configuracionVisual.lineaDeTiempo);
-      this.convertirLineaTiempoConfig(datosCompletos.configuracionVisual.lineaDeTiempo);
-    } else if (datosCompletos.lineaDeTiempo) {
-      // Fallback: buscar en nivel raíz por si acaso
-      console.log('✅ Configuración de línea encontrada (nivel raíz):', datosCompletos.lineaDeTiempo);
-      this.convertirLineaTiempoConfig(datosCompletos.lineaDeTiempo);
-    } else {
-      console.warn('⚠️ No se encontró configuración de línea de tiempo, usando diseño por defecto');
-    }
+    if (proyectoData.configuracion.lineaDeTiempo) {
+      this.convertirLineaTiempoConfig(proyectoData.configuracion.lineaDeTiempo);
+    } 
 
-    // 5. Precargar imágenes antes de cargar eventos
+    // 5. ✅ EXTRAER POSICIONES REALES de elementosKonva
+    const posicionesReales = this.extraerPosicionesDeElementosKonva(proyectoData.elementosKonva);
+    console.log('📍 Posiciones reales extraídas:', posicionesReales);
+
+    // 6. Precargar imágenes antes de cargar eventos
     console.log('🖼️ Precargando imágenes del proyecto...');
     const eventosConImagenesCargadas = await this.preloadImagesForEvents(proyectoData.eventos);
     
-    // 6. Asignar eventos CON zonaDesign preservado
-    this.timelineEvents = eventosConImagenesCargadas.map(evento => {
-      const eventoOriginal = proyectoData.eventos.find(e => e.year === evento.year);
+    const eventosOrdenados = eventosConImagenesCargadas.sort((a, b) => {
+      if (a.orden !== undefined && b.orden !== undefined) {
+        return a.orden - b.orden;
+      }
+      if (a.orden !== undefined) return -1;
+      if (b.orden !== undefined) return 1;
+      return a.year - b.year;
+    });
+
+    // 7. ✅ ASIGNAR POSICIONES REALES A LOS EVENTOS
+    this.timelineEvents = eventosOrdenados.map((evento, index) => {
+      const eventoOriginal = proyectoData.eventos.find(e => 
+        e.year === evento.year && e.title === evento.title
+      );
+      
+      // ✅ USAR posicionReal si existe, sino usar posicionLibre, sino zonaDesign
+      const posicionReal = posicionesReales[index];
+      const posicionLibre = eventoOriginal?.posicionLibre;
+      const posicionZona = (eventoOriginal as any)?.zonaDesign?.posicion;
+
+      let posicionFinal;
+      if (posicionReal) {
+        posicionFinal = posicionReal;
+        console.log(`✅ Evento ${index + 1} usando posición REAL de elementosKonva:`, posicionReal);
+      } else if (posicionLibre) {
+        posicionFinal = posicionLibre;
+        console.log(`✅ Evento ${index + 1} usando posicionLibre:`, posicionLibre);
+      } else if (posicionZona) {
+        posicionFinal = posicionZona;
+        console.log(`⚠️ Evento ${index + 1} usando posición de zona (fallback):`, posicionZona);
+      }
+
       return {
         ...evento,
-        zonaDesign: (eventoOriginal as any)?.zonaDesign || null
+        zonaDesign: (eventoOriginal as any)?.zonaDesign || null,
+        posicionLibre: posicionFinal || posicionZona, // ✅ Guardar la posición real
+        orden: eventoOriginal?.orden ?? index
       };
     });
     
-    // 7. ✅ Renderizar la línea de tiempo base ANTES de cargar elementos decorativos
+    // 8. Renderizar la línea de tiempo base
     console.log('📏 Renderizando línea de tiempo base...');
     this.renderTimelineBase();
 
-    // 8. Cargar elementos decorativos
+    // 9. Cargar elementos decorativos
     if (proyectoData.elementosKonva && proyectoData.elementosKonva.length > 0) {
-      console.log('🎨 Cargando elementos decorativos de la plantilla...');
+      console.log('🎨 Cargando elementos decorativos...');
       
       const elementos = proyectoData.elementosKonva as any[];
       
-      // Cargar otros elementos decorativos (sin incluir la línea base)
       for (const elemento of elementos) {
-        const esLineaPrincipal = elemento.id === 'decor-1' || elemento.tipo === 'line';
-        if (!esLineaPrincipal) {
+        // Saltar grupos de eventos (ya se renderizan con renderTimelineEvents)
+        const esGrupoEvento = elemento.tipo === 'Group' && 
+                             elemento.hijos && 
+                             elemento.hijos.length > 0;
+        
+        if (!esGrupoEvento) {
           await this.crearElementoDesdeSerializacion(elemento);
         }
       }
     }
 
-    // 9. Renderizar eventos con su diseño
-    console.log('📍 Renderizando eventos con diseño de plantilla...');
+    // 10. Renderizar eventos con su diseño y posición real
+    console.log('📍 Renderizando eventos con posiciones reales...');
     this.renderTimelineEvents();
     
-    console.log('✅ Proyecto cargado completamente en editor:', proyectoData.metadata.nombre);
+    console.log('✅ Proyecto cargado completamente:', proyectoData.metadata.nombre);
     
   } catch (error) {
     console.error('❌ Error cargando proyecto desde JSON:', error);
     this.mostrarMensaje('Error al cargar el proyecto', 'error');
   }
+}
+
+
+private extraerYGuardarZonasDeEventos(eventos: TimelineEvent[]): void {
+  this.zonasPlantilla = [];
+  
+  // Buscar los primeros N eventos que tengan zonaDesign
+  const eventosConDiseno = eventos
+    .filter(e => (e as any).zonaDesign)
+    .slice(0, 3); // Tomar máximo 3 para el patrón
+  
+  if (eventosConDiseno.length === 0) {
+    console.warn('⚠️ No se encontraron diseños en los eventos');
+    return;
+  }
+  
+  // Guardar cada diseño
+  eventosConDiseno.forEach((evento, index) => {
+    const zonaDesign = (evento as any).zonaDesign;
+    
+    // Crear una copia limpia del diseño
+    const zonaBase = {
+      id: zonaDesign.id || `zone-${index + 1}`,
+      nombre: zonaDesign.nombre || `Diseño ${index + 1}`,
+      posicion: { ...zonaDesign.posicion },
+      elementos: JSON.parse(JSON.stringify(zonaDesign.elementos || [])),
+      contenedor: { ...zonaDesign.contenedor },
+      orden: index + 1
+    };
+    
+    this.zonasPlantilla.push(zonaBase);
+  });
+  
+  console.log(`✅ ${this.zonasPlantilla.length} zonas restauradas desde eventos existentes`);
+}
+
+
+private extraerPosicionesDeElementosKonva(elementosKonva: any[]): Array<{ x: number; y: number }> {
+  const posiciones: Array<{ x: number; y: number }> = [];
+  
+  if (!elementosKonva || !Array.isArray(elementosKonva)) {
+    return posiciones;
+  }
+
+  // Buscar solo los grupos que representan eventos (tienen hijos)
+  const gruposEventos = elementosKonva.filter(elem => 
+    elem.tipo === 'Group' && 
+    elem.hijos && 
+    elem.hijos.length > 0 &&
+    elem.draggable === true // Los eventos son draggable
+  );
+
+  // Extraer posiciones en orden
+  gruposEventos.forEach(grupo => {
+    posiciones.push({
+      x: grupo.x,
+      y: grupo.y
+    });
+  });
+
+  console.log(`📊 Extraídas ${posiciones.length} posiciones de grupos en elementosKonva`);
+  return posiciones;
 }
 
 
@@ -2944,12 +2982,12 @@ private cargarPlantillaDesdeJSON(plantillaJSON: any): void {
 private guardarZonasPlantilla(zonas: any[]): void {
   // ✅ SOLO GUARDAR LAS ZONAS PARA USO FUTURO, NO CREAR EVENTOS
   this.zonasPlantilla = [...zonas];
-  console.log(`💾 Zonas de plantilla guardadas: ${this.zonasPlantilla.length} zonas`);
+  //console.log(`💾 Zonas de plantilla guardadas: ${this.zonasPlantilla.length} zonas`);
   
   // Limpiar eventos existentes
   this.timelineEvents = [];
   
-  console.log('✅ Plantilla lista. Los eventos aparecerán cuando el usuario los agregue.');
+  //console.log('✅ Plantilla lista. Los eventos aparecerán cuando el usuario los agregue.');
 }
 
 
@@ -2957,7 +2995,7 @@ private guardarZonasPlantilla(zonas: any[]): void {
 
 private cargarConfiguracionLineaTiempo(lineaConfig: any): void {
   try {
-    console.log('📈 Cargando configuración de línea de tiempo:', lineaConfig);
+    //console.log('📈 Cargando configuración de línea de tiempo:', lineaConfig);
     
     // Buscar un diseño de timeline que coincida con el tipo
     const diseñoCoincidente = this.timelineDesigns.find(design => 
@@ -3384,11 +3422,6 @@ private cargarConfiguracionVisual(configuracion: any): void {
   this.stage.height(this.canvasHeight);
   this.updateBackgroundColor(this.backgroundColor);
   
-  console.log('✅ Configuración visual aplicada:', {
-    width: this.canvasWidth,
-    height: this.canvasHeight,
-    backgroundColor: this.backgroundColor
-  });
 }
 
 
@@ -3732,7 +3765,7 @@ private applyZoom(zoomLevel: number): void {
   // Re-dibujar todo
   stage.batchDraw();
   
-  console.log(`🔍 Zoom aplicado: ${newZoom}% - Contenido centrado`);
+
 }
 
 /**
@@ -4316,7 +4349,7 @@ private editarTextoDirectamente(textNode: Konva.Text): void {
 
 private manejarDobleClicGrupo(group: Konva.Group): void {
   // Aquí puedes implementar acciones específicas para grupos
-  console.log('Doble clic en grupo:', group);
+  //console.log('Doble clic en grupo:', group);
 }
 
 
@@ -4328,59 +4361,11 @@ private manejarDobleClicGrupo(group: Konva.Group): void {
 
 
   // ========== MÉTODOS DE PLANTILLAS ==========
-  loadTemplates(): void {
-    this.availableTemplates = this.templateService.getTemplates();
-  }
+ 
 
-  applyTemplate(template: TimelineTemplate): void {
-    this.templateService.applyTemplate(template, this);
-    this.showTemplateSelector = false;
-  }
 
-saveAsTemplate(): void {
-    const template: TimelineTemplate = {
-      name: `Diseño Personalizado - ${new Date().toLocaleDateString()}`,
-      description: 'Plantilla de diseño creada desde el editor',
-      category: 'Personalizado',
-      createdBy: 'user',
-      createdAt: new Date(),
-      isPublic: false,
-      styles: this.getCurrentStyles(),
-      layout: this.getCurrentLayout()
-    };
 
-    this.templateService.saveTemplate(template);
-    alert('Plantilla de diseño guardada correctamente');
-  }
 
-   private getCurrentStyles(): any {
-    return {
-      backgroundColor: this.backgroundColor,
-      timelineColor: '#070707ff',
-      eventColor: '#3498db',
-      textColor: '#2c3e50',
-      accentColor: '#e74c3c',
-      fontFamily: 'Arial',
-      titleFontSize: 14,
-      yearFontSize: 12,
-      imageStyle: 'circle',
-      imageSize: 90,
-      imageBorder: true,
-      shadows: true,
-      animations: true,
-      connectorStyle: 'dashed'
-    };
-  }
-
-  private getCurrentLayout(): TemplateLayout {
-    return {
-      timelinePosition: 'center',
-      eventOrientation: 'alternate',
-      eventSpacing: 120,
-      markerStyle: 'dot',
-      compactMode: false
-    };
-  }
 
   // ========== MÉTODOS KONVA ==========
     initKonva(): void {
@@ -4579,7 +4564,46 @@ private esElementoPreservar(node: Konva.Node): boolean {
   
 
 createTimelineEvent(event: TimelineEvent): void {
-  const position = this.calculateEventPosition(event.year);
+  // ✅ ORDEN DE PRIORIDAD CORREGIDO PARA POSICIÓN:
+  // 1. posicionLibre del evento guardado (MAYOR PRIORIDAD)
+  // 2. Posición del grupo serializado en elementosKonva
+  // 3. zonaDesign.posicion (solo como referencia de diseño, no posición)
+  // 4. Calcular según año (fallback)
+  
+  const posicionLibreGuardada = (event as any)['posicionLibre'];
+  const zonaDesign = (event as any).zonaDesign;
+  
+  let position;
+  
+  // ✅ PRIORIDAD 1: posicionLibre guardada explícitamente
+  if (posicionLibreGuardada && posicionLibreGuardada.x !== undefined && posicionLibreGuardada.y !== undefined) {
+    position = { 
+      x: posicionLibreGuardada.x, 
+      y: posicionLibreGuardada.y 
+    };
+    console.log(`📍 Evento "${event.title}" - Usando posicionLibre guardada (${position.x}, ${position.y})`);
+  }
+  // ✅ PRIORIDAD 2: Buscar en elementosKonva serializados
+  else {
+    const posicionDeElementosKonva = this.buscarPosicionEnElementosKonva(event);
+    if (posicionDeElementosKonva) {
+      position = posicionDeElementosKonva;
+      console.log(`📍 Evento "${event.title}" - Usando posición de elementosKonva (${position.x}, ${position.y})`);
+    }
+    // ✅ PRIORIDAD 3: zonaDesign.posicion (solo si no hay nada más)
+    else if (zonaDesign && zonaDesign.posicion) {
+      position = { 
+        x: zonaDesign.posicion.x, 
+        y: zonaDesign.posicion.y 
+      };
+      console.log(`📍 Evento "${event.title}" - Usando posición de zonaDesign (fallback)`);
+    }
+    // ✅ PRIORIDAD 4: Calcular según año (último recurso)
+    else {
+      position = this.calculateEventPosition(event.year);
+      console.log(`📍 Evento "${event.title}" - Calculando por año ${event.year}`);
+    }
+  }
   
   if (!position) return;
 
@@ -4587,29 +4611,51 @@ createTimelineEvent(event: TimelineEvent): void {
     x: position.x,
     y: position.y,
     draggable: true,
-    dragBoundFunc: (pos) => this.getDragBoundPosition(pos, position.y)
+    dragBoundFunc: (pos) => this.getDragBoundPosition(pos, position.y, position.x)
   });
 
-  // ✅ CORRECCIÓN: Verificar zonaDesign de manera segura
-  const zonaDesign = (event as any).zonaDesign;
-  
-  if (zonaDesign && zonaDesign.posicion && zonaDesign.elementos) {
-    console.log(`🎨 Aplicando diseño de plantilla para: ${event.title}`);
+  // ✅ Aplicar SOLO diseño visual (textos, imágenes, contenedores)
+  if (zonaDesign && zonaDesign.elementos) {
     this.aplicarDiseñoPlantilla(group, event, zonaDesign);
-  } else {
-    console.log(`⚪ Usando diseño por defecto para: ${event.title}`);
-    // Usar diseño por defecto
-    this.applyEventDesign(group, event, this.currentEventDesign);
   }
 
   // ✅ Marcar como evento de timeline
-  group.setAttr('timelineEvent', true);
+  group.setAttr('timelineEvent', event);
   group.setAttr('esEvento', true);
 
   this.configurarInteracciones(group);
   this.configurarEventosTimeline(group, event, position);
   this.mainLayer.add(group);
 }
+
+
+private buscarPosicionEnElementosKonva(event: TimelineEvent): { x: number; y: number } | null {
+  try {
+    // Buscar en los grupos serializados que tengan el título del evento
+    const grupos = this.mainLayer.find('Group');
+    
+    for (let i = 0; i < grupos.length; i++) {
+      const grupo = grupos[i] as Konva.Group;
+      const eventoAsociado = grupo.getAttr('timelineEvent');
+      
+      // Verificar si es el evento que buscamos
+      if (eventoAsociado && 
+          eventoAsociado.year === event.year && 
+          eventoAsociado.title === event.title) {
+        return {
+          x: grupo.x(),
+          y: grupo.y()
+        };
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.warn('Error buscando posición en elementosKonva:', error);
+    return null;
+  }
+}
+
 
 private configurarEventosTimeline(group: Konva.Group, event: TimelineEvent,position:any): void {
   group.on('dblclick', (e) => {
@@ -4628,14 +4674,13 @@ private configurarEventosTimeline(group: Konva.Group, event: TimelineEvent,posit
 
 
 private aplicarDiseñoPlantilla(group: Konva.Group, event: TimelineEvent, zonaDesign: any): void {
-  console.log('📐 Diseño de zona:', zonaDesign);
   
   // ✅ ESTABLECER POSICIÓN DEL GRUPO PRIMERO
-  const posicionZona = zonaDesign.posicion;
+  /*const posicionZona = zonaDesign.posicion;
   group.position({ 
     x: posicionZona.x, 
     y: posicionZona.y 
-  });
+  });*/
 
   // ✅ LUEGO crear elementos con coordenadas RELATIVAS al grupo
   if (zonaDesign.elementos && Array.isArray(zonaDesign.elementos)) {
@@ -4644,7 +4689,6 @@ private aplicarDiseñoPlantilla(group: Konva.Group, event: TimelineEvent, zonaDe
     });
   }
 
-  console.log(`✅ Diseño aplicado para: ${event.title} en posición (${posicionZona.x}, ${posicionZona.y})`);
 }
 
 
@@ -4682,7 +4726,7 @@ private crearElementoDesdePlantilla(group: Konva.Group, elemento: any, event: Ti
 
   switch (elemento.tipo) {
     case 'contenedor':
-      konvaElement = new Konva.Rect({
+      /*konvaElement = new Konva.Rect({
         x: elemento.x,
         y: elemento.y,
         width: elemento.width,
@@ -4693,8 +4737,11 @@ private crearElementoDesdePlantilla(group: Konva.Group, elemento: any, event: Ti
         cornerRadius: elemento.configuracion.cornerRadius,
         rotation: elemento.configuracion.rotation || 0,
         visible: elemento.visible !== false
-      });
+      });*/
+
+       konvaElement = this.crearContenedorSegunForma(elemento);
       break;
+     
       
     case 'titulo':
       const tituloTexto = event.title || 'Nuevo Evento';
@@ -4792,6 +4839,251 @@ private crearElementoDesdePlantilla(group: Konva.Group, elemento: any, event: Ti
 }
 
 
+private crearContenedorSegunForma(elemento: any): Konva.Shape {
+  const forma = elemento.configuracion?.forma || 'rectangulo';
+  const x = elemento.x;
+  const y = elemento.y;
+  const width = elemento.width;
+  const height = elemento.height;
+  const fill = elemento.configuracion.fill;
+  const stroke = elemento.configuracion.stroke;
+  const strokeWidth = elemento.configuracion.strokeWidth;
+  const rotation = elemento.configuracion.rotation || 0;
+  const visible = elemento.visible !== false;
+
+  switch (forma) {
+    case 'circulo':
+      // ✅ Contenedor circular
+      return new Konva.Circle({
+        x: x + width / 2,  // Centro del área
+        y: y + height / 2,
+        radius: Math.min(width, height) / 2,
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        rotation: rotation,
+        visible: visible
+      });
+
+    case 'estrella':
+      // ✅ Contenedor en forma de estrella
+      return new Konva.Star({
+        x: x + width / 2,
+        y: y + height / 2,
+        numPoints: 5,
+        innerRadius: Math.min(width, height) * 0.4,
+        outerRadius: Math.min(width, height) / 2,
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        rotation: rotation,
+        visible: visible
+      });
+
+    case 'rombo':
+      // ✅ Contenedor en forma de rombo
+      return new Konva.Line({
+        points: [
+          x + width / 2, y,           // top
+          x + width, y + height / 2,  // right
+          x + width / 2, y + height,  // bottom
+          x, y + height / 2           // left
+        ],
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        closed: true,
+        rotation: rotation,
+        visible: visible
+      });
+
+    case 'linea':
+      // ✅ CORREGIDO: Manejar rotación correctamente
+      const lineaSimple = new Konva.Line({
+        points: this.calcularPuntosLineaSinRotacion(elemento),
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        lineCap: 'round',
+        lineJoin: 'round',
+        visible: visible
+      });
+      
+      // Aplicar offset y rotación
+      this.aplicarRotacionLinea(lineaSimple, elemento);
+      return lineaSimple;
+
+    case 'linea-punteada':
+      // ✅ CORREGIDO: Manejar rotación correctamente
+      const lineaPunteada = new Konva.Line({
+        points: this.calcularPuntosLineaSinRotacion(elemento),
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        lineCap: 'round',
+        lineJoin: 'round',
+        dash: elemento.configuracion.dashPattern || [10, 5],
+        visible: visible
+      });
+      
+      // Aplicar offset y rotación
+      this.aplicarRotacionLinea(lineaPunteada, elemento);
+      return lineaPunteada;
+
+    case 'flecha':
+      // ✅ CORREGIDO: Manejar rotación correctamente
+      const flecha = new Konva.Arrow({
+        points: this.calcularPuntosLineaSinRotacion(elemento),
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        fill: stroke,
+        pointerLength: elemento.configuracion.pointerLength || Math.min(20, Math.max(width, height) * 0.2),
+        pointerWidth: elemento.configuracion.pointerWidth || Math.min(15, Math.max(width, height) * 0.15),
+        lineCap: 'round',
+        lineJoin: 'round',
+        visible: visible
+      });
+      
+      // Aplicar offset y rotación
+      this.aplicarRotacionLinea(flecha, elemento);
+      return flecha;
+
+
+    case 'triangulo':
+      // ✅ Contenedor triangular
+      return new Konva.Line({
+        points: [
+          x + width / 2, y,           // top
+          x + width, y + height,      // bottom right
+          x, y + height               // bottom left
+        ],
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        closed: true,
+        rotation: rotation,
+        visible: visible
+      });
+
+    
+
+    case 'rectangulo':
+    default:
+      // ✅ Contenedor rectangular (default)
+      return new Konva.Rect({
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        fill: fill,
+        stroke: stroke,
+        strokeWidth: strokeWidth,
+        cornerRadius: elemento.configuracion.cornerRadius || 0,
+        rotation: rotation,
+        visible: visible
+      });
+  }
+}
+
+
+
+private calcularPuntosLineaSinRotacion(elemento: any): number[] {
+  const config = elemento.configuracion;
+  
+  // Si hay puntos personalizados
+  if (config.puntos && Array.isArray(config.puntos) && config.puntos.length >= 4) {
+    return config.puntos;
+  }
+  
+  const width = Math.abs(elemento.width || 0);
+  const height = Math.abs(elemento.height || 0);
+  const rotation = config.rotation || 0;
+  
+  // ✅ LÓGICA SIMPLE:
+  // - Para rotación 90°/270°: la línea HORIZONTAL (width) se rota a VERTICAL
+  // - Para rotación 0°/180°: la línea usa width normalmente
+  // - Para otras: usar la dimensión más pequeña (es el grosor, no la longitud)
+  
+  let longitud: number;
+  
+  if (rotation === 90 || rotation === 270 || rotation === -90 || rotation === -270) {
+    // Vertical: usar WIDTH (porque se rotará)
+    longitud = width;
+  } else if (rotation === 0 || rotation === 180 || rotation === -180 || !rotation) {
+    // Horizontal: usar WIDTH
+    longitud = width;
+  } else {
+    // Diagonal: usar menor dimensión (la mayor es el "área")
+    longitud = Math.min(width, height);
+  }
+  
+  const puntos = [0, 0, longitud, 0];
+  
+  console.log(`📐 Línea: ${longitud}px (w=${width}, h=${height}, rot=${rotation}°)`);
+  return puntos;
+}
+
+// ==================== MÉTODO: aplicarRotacionLinea (SIN CAMBIOS) ====================
+private aplicarRotacionLinea(linea: Konva.Line | Konva.Arrow, elemento: any): void {
+  const x = elemento.x;
+  const y = elemento.y;
+  const rotation = elemento.configuracion.rotation || 0;
+  
+  if (rotation !== 0) {
+    linea.position({ x: x, y: y });
+    linea.offsetX(0);
+    linea.offsetY(0);
+    linea.rotation(rotation);
+    
+    console.log(`🔄 Línea rotada ${rotation}° en (${x}, ${y})`);
+  } else {
+    linea.position({ x: x, y: y });
+    console.log(`📍 Línea sin rotación en (${x}, ${y})`);
+  }
+}
+
+
+private crearFlechaShape(x: number, y: number, width: number, height: number,elemento: any, stroke: string, strokeWidth: number, rotation: number, visible: boolean): Konva.Arrow {
+  return new Konva.Arrow({
+    points: this.calcularPuntosLinea(elemento),
+    stroke: stroke,
+    strokeWidth: strokeWidth,
+    fill: stroke,
+    pointerLength: Math.min(20, width * 0.2),
+    pointerWidth: Math.min(15, width * 0.15),
+    lineCap: 'round',
+    lineJoin: 'round',
+    rotation: rotation,
+    visible: visible
+  });
+}
+
+private calcularPuntosLinea(elemento: any): number[] {
+  const config = elemento.configuracion;
+  
+  // ✅ PRIORIDAD 1: Si hay puntos personalizados en la configuración, usarlos
+  if (config.puntos && Array.isArray(config.puntos) && config.puntos.length >= 4) {
+    console.log('📍 Usando puntos personalizados:', config.puntos);
+    return config.puntos;
+  }
+  
+  // ✅ PRIORIDAD 2: Calcular desde las propiedades del elemento
+  const x = elemento.x;
+  const y = elemento.y;
+  const width = elemento.width || 100;
+  const height = elemento.height || 0;
+  
+  // Determinar orientación según width y height
+  if (Math.abs(height) > Math.abs(width)) {
+    // Línea más vertical que horizontal
+    const puntos = [x, y, x + width, y + height];
+    console.log('📐 Calculando línea vertical:', puntos);
+    return puntos;
+  } else {
+    // Línea más horizontal que vertical
+    const puntos = [x, y, x + width, y + height];
+    console.log('📐 Calculando línea horizontal:', puntos);
+    return puntos;
+  }
+}
 
 private crearImagenDirecta(elemento: any, imageUrl: string): Konva.Shape {
   const forma = elemento.configuracion?.forma || 'rectangulo';
@@ -5742,14 +6034,49 @@ private crearContenedorDesdePlantilla(elemento: any): Konva.Rect {
 }
 
 private updateEventPosition(event: TimelineEvent, x: number, y: number): void {
+  // ✅ SIEMPRE guardar la posición actual como posicionLibre
+  (event as any)['posicionLibre'] = { x, y };
+  
   if (this.autoUpdateYears) {
     const newYear = this.calculateYearFromPosition(x, y);
     event.year = newYear;
     this.timelineEvents.sort((a, b) => a.year - b.year);
-    this.renderTimelineEvents();
+    
+    // ✅ Al ordenar, NO re-renderizar todo, solo actualizar el año visualmente
+    this.actualizarYearVisualmente(event);
   } else {
-    console.log(`Evento "${event.title}" mantiene año ${event.year} (movimiento libre)`);
-    this.actualizarPosicionVisualEvento(event);
+    console.log(`📍 Evento "${event.title}" guardó nueva posición (${x}, ${y})`);
+  }
+}
+
+private actualizarYearVisualmente(event: TimelineEvent): void {
+  const grupos = this.mainLayer.find('Group');
+  
+  for (let i = 0; i < grupos.length; i++) {
+    const grupo = grupos[i] as Konva.Group;
+    const eventoAsociado = grupo.getAttr('timelineEvent');
+    
+    if (eventoAsociado && 
+        eventoAsociado.title === event.title && 
+        eventoAsociado.year !== event.year) {
+      
+      // Actualizar el año en el texto del evento
+      grupo.children?.forEach((child: Konva.Node) => {
+        if (child instanceof Konva.Text) {
+          const texto = child.text();
+          // Buscar el texto que parece un año (4 dígitos)
+          if (/^\d{4}$/.test(texto)) {
+            child.text(event.year.toString());
+          }
+        }
+      });
+      
+      // Actualizar la referencia del evento
+      grupo.setAttr('timelineEvent', event);
+      
+      this.mainLayer.batchDraw();
+      break;
+    }
   }
 }
 
@@ -5845,8 +6172,6 @@ private convertirLineaTiempoConfig(lineaConfig: any): void {
     return;
   }
 
-  console.log('🔄 Convirtiendo configuración de línea:', lineaConfig);
-
   const tipoMapeado = this.mapearTipoLinea(lineaConfig.tipo);
   
   if (!tipoMapeado) {
@@ -5909,15 +6234,6 @@ private convertirLineaTiempoConfig(lineaConfig: any): void {
   this.currentTimelineDesign = customDesign;
   this.selectedTimelineDesignId = 'custom-from-json';
   
-  console.log('✅ Configuración de línea convertida:', {
-    tipoOriginal: lineaConfig.tipo,
-    tipoMapeado: customDesign.layout.type,
-    positionX: customDesign.layout.positionX,
-    positionY: customDesign.layout.positionY,
-    intensity: customDesign.layout.intensity,
-    amplitude: customDesign.layout.amplitude,
-    frequency: customDesign.layout.frequency
-  });
 }
 
 
@@ -6036,8 +6352,12 @@ private calculateSpiralPosition(progress: number): { x: number; y: number } {
   return { x, y };
 }
 
-private getDragBoundPosition(pos: { x: number; y: number }, originalY: number): { x: number; y: number } {
+private getDragBoundPosition(pos: { x: number; y: number }, originalY: number,originalX?: number): { x: number; y: number } {
   const layout = this.currentTimelineDesign.layout;
+//para mover libremente
+  /* if (!this.autoUpdateYears) {
+    return { x: pos.x, y: pos.y };
+  }*/
   
   switch (layout.type) {
     case 'horizontal':
@@ -6046,8 +6366,9 @@ private getDragBoundPosition(pos: { x: number; y: number }, originalY: number): 
     
     case 'vertical':
       // Solo movimiento vertical en la línea
-      return { x: originalY, y: pos.y }; // Nota: originalY aquí es realmente la x original
-    
+    const xFinal = originalX !== undefined ? originalX : this.getTimelineXPosition();
+      return { x: xFinal, y: pos.y };
+    case 's-curve':return{ x: pos.x, y: pos.y }; 
     case 'curve':
     case 'wave':
     case 'zigzag':
@@ -6094,162 +6415,6 @@ private calculateExpectedY(x: number): number {
   }
 }
 
-
-
-
-
-   private applyEventDesign(group: Konva.Group, event: TimelineEvent, design: EventDesign): void {
-    design.elements.forEach(element => {
-      switch (element.type) {
-        case 'connector':
-          this.createConnector(group, element, design.styles);
-          break;
-        case 'image-container':
-          this.createImageContainer(group, element);
-          break;
-        case 'image':
-          if (event.image) {
-            this.createImageElement(group, element, event.image);
-          }
-          break;
-        case 'title-box':
-          this.createTitleBox(group, element);
-          break;
-        case 'title-text':
-          this.createTextElement(group, element, event.title, 'title');
-          break;
-        case 'year-text':
-          this.createTextElement(group, element, event.year.toString(), 'year');
-          break;
-        case 'description-text':
-          if (event.description) {
-            this.createTextElement(group, element, event.description, 'description');
-          }
-          break;
-      }
-    });
-    if (event.link) {
-    this.agregarElementoLinkAlEvento(group, event);
-  }
-  }
-
-
-  private createConnector(group: Konva.Group, element: EventElement, styles: EventStyles): void {
-    const connector = new Konva.Line({
-      points: [element.position.x, element.position.y, element.position.x, element.position.y + 110],
-      stroke: element.styles.stroke,
-      strokeWidth: element.styles.strokeWidth,
-      dash: this.getDashStyle(styles.connectorStyle)
-    });
-    group.add(connector);
-  }
-
-  private createImageContainer(group: Konva.Group, element: EventElement): void {
-  if (!element.size) return;
-
-  let container: Konva.Shape;
-  
-  switch (element.size.type) {
-    case 'circle':
-      container = new Konva.Circle({
-        x: element.position.x,
-        y: element.position.y,
-        radius: element.size.radius,
-        fill: element.styles.fill,
-        stroke: element.styles.stroke,
-        strokeWidth: element.styles.strokeWidth,
-        shadowColor: element.styles.shadow?.color,
-        shadowBlur: element.styles.shadow?.blur,
-        shadowOffset: element.styles.shadow?.offset,
-        shadowOpacity: element.styles.shadow?.opacity
-      });
-      break;
-    
-    case 'rectangle':
-      container = new Konva.Rect({
-        x: element.position.x - (element.size.width / 2),
-        y: element.position.y - (element.size.height / 2),
-        width: element.size.width,
-        height: element.size.height,
-        fill: element.styles.fill,
-        stroke: element.styles.stroke,
-        strokeWidth: element.styles.strokeWidth,
-        cornerRadius: element.size.cornerRadius || element.styles.cornerRadius,
-        shadowColor: element.styles.shadow?.color,
-        shadowBlur: element.styles.shadow?.blur,
-        shadowOffset: element.styles.shadow?.offset,
-        shadowOpacity: element.styles.shadow?.opacity
-      });
-      break;
-    
-    case 'square':
-      container = new Konva.Rect({
-        x: element.position.x - (element.size.size / 2),
-        y: element.position.y - (element.size.size / 2),
-        width: element.size.size,
-        height: element.size.size,
-        fill: element.styles.fill,
-        stroke: element.styles.stroke,
-        strokeWidth: element.styles.strokeWidth,
-        cornerRadius: element.size.cornerRadius || element.styles.cornerRadius,
-        shadowColor: element.styles.shadow?.color,
-        shadowBlur: element.styles.shadow?.blur,
-        shadowOffset: element.styles.shadow?.offset,
-        shadowOpacity: element.styles.shadow?.opacity
-      });
-      break;
-    
-    default:
-      return;
-  }
-  
-  group.add(container);
-}
-
-  private createImageElement(group: Konva.Group, element: EventElement, imageUrl: string): void {
-  if (!element.size) return;
-
-  const imageObj = new Image();
-  imageObj.onload = () => {
-    let width = 0;
-    let height = 0;
-    let cornerRadius = element.styles.cornerRadius;
-
-    // Determinar dimensiones según el tipo de size
-   /* switch (element.size.type) {
-      case 'rectangle':
-        width = element.size.width;
-        height = element.size.height;
-        cornerRadius = element.size.cornerRadius || cornerRadius;
-        break;
-      case 'square':
-        width = element.size.size;
-        height = element.size.size;
-        cornerRadius = element.size.cornerRadius || cornerRadius;
-        break;
-      case 'circle':
-        width = element.size.radius * 2;
-        height = element.size.radius * 2;
-        cornerRadius = element.size.radius; // Para círculo completo
-        break;
-    }*/
-
-    const image = new Konva.Image({
-      x: element.position.x,
-      y: element.position.y,
-      image: imageObj,
-      width: width,
-      height: height,
-      cornerRadius: cornerRadius,
-      perfectDrawEnabled: false
-    });
-    group.add(image);
-    group.getLayer()?.batchDraw();
-  };
-  imageObj.src = imageUrl;
-}
-
-
  getLayoutTypeName(type: string): string {
     const names: { [key: string]: string } = {
       'horizontal': 'Horizontal',
@@ -6262,56 +6427,7 @@ private calculateExpectedY(x: number): number {
     return names[type] || type;
   }
 
-  private createTitleBox(group: Konva.Group, element: EventElement): void {
-  if (!element.size || element.size.type !== 'rectangle') return;
-
-  const box = new Konva.Rect({
-    x: element.position.x,
-    y: element.position.y,
-    width: element.size.width,
-    height: element.size.height,
-    fill: element.styles.fill,
-    stroke: element.styles.stroke,
-    strokeWidth: element.styles.strokeWidth,
-    cornerRadius: element.size.cornerRadius || element.styles.cornerRadius,
-    shadowColor: element.styles.shadow?.color,
-    shadowBlur: element.styles.shadow?.blur,
-    shadowOffset: element.styles.shadow?.offset,
-    shadowOpacity: element.styles.shadow?.opacity
-  });
-  group.add(box);
-}
-  private createTextElement(group: Konva.Group, element: EventElement, text: string, type: 'title' | 'year' | 'description'): void {
-  const truncatedText = type === 'title' ? this.truncateText(text, element.content?.maxLength || 80) : text;
-  
-  const textConfig: any = {
-    x: element.position.x,
-    y: element.position.y,
-    text: truncatedText,
-    fontSize: element.styles.fontSize,
-    fontFamily: element.styles.fontFamily,
-    fill: element.styles.fill,
-    fontStyle: element.styles.fontStyle,
-    align: element.styles.textAlign as any
-  };
-
-  // Solo agregar width y height si el elemento tiene size definido y es rectangle
-  if (element.size && element.size.type === 'rectangle') {
-    textConfig.width = element.size.width;
-    textConfig.height = element.size.height;
-  }
-
-  const textElement = new Konva.Text(textConfig);
-  group.add(textElement);
-}
-
-  private getDashStyle(style: string): number[] {
-    switch (style) {
-      case 'dashed': return [5, 5];
-      case 'dotted': return [2, 5];
-      default: return []; // solid
-    }
-  }
+ 
 
   // Método para cambiar el diseño de eventos
    changeEventDesign(event: Event): void {
@@ -6328,82 +6444,6 @@ private calculateExpectedY(x: number): number {
     }
   }
 
-
-//======= Evento CON IMAGEN ========
-  createEventWithImage(group: Konva.Group, event: TimelineEvent): void {
-    const imageSize = 90;
-
-    const connector = new Konva.Line({
-      points: [0, 6, 0, 110],
-      stroke: '#333e32ff',
-      strokeWidth: 1,
-      dash: [5, 5]
-    });
-    group.add(connector);
-
-    const imageCircle = new Konva.Circle({
-      x: 0,
-      y: -75,
-      radius: imageSize / 2,
-      fill: '#ffffff',
-      stroke: '#000000ff',
-      strokeWidth: 7,
-      shadowColor: 'rgba(0,0,0,0.3)',
-      shadowBlur: 8,
-      shadowOffset: { x: 0, y: 3 },
-      shadowOpacity: 0.5
-    });
-    group.add(imageCircle);
-
-    const imageObj = new Image();
-    imageObj.onload = () => {
-      const image = new Konva.Image({
-        x: -imageSize / 2,
-        y: -75 - imageSize / 2,
-        image: imageObj,
-        width: imageSize,
-        height: imageSize,
-        cornerRadius: imageSize / 2,
-        perfectDrawEnabled: false
-      });
-      group.add(image);
-      group.getLayer()?.batchDraw();
-    };
-    imageObj.src = event.image!;
-
-    const titleBox = new Konva.Rect({
-      x: -50,
-      y: 37,
-      width: 100,
-      height: 80,
-      fill: 'white',
-      stroke: '#06060625',
-      strokeWidth: 1,
-      cornerRadius: 4,
-      shadowColor: 'rgba(75, 72, 72, 1)',
-      shadowBlur: 5,
-      shadowOffset: { x: 0, y: 2 }
-    });
-    group.add(titleBox);
-
-    const titleText = new Konva.Text({
-      x: -45,
-      y: 75,
-      text: this.truncateText(event.title, 80),
-      fontSize: 12,
-      fontFamily: 'Arial',
-      fill: '#2c3e50',
-      width: 90,
-      align: 'center',
-      fontStyle: 'bold'
-    });
-    group.add(titleText);
-
-    if(event.link){
-      this.agregarElementoLinkAlEvento(group,event);
-
-    }
-  }
 
 
   private agregarElementoLinkAlEvento(group: Konva.Group, event: TimelineEvent): void {
@@ -6442,56 +6482,7 @@ private calculateExpectedY(x: number): number {
   
   group.add(linkText);
 }
-
-  //======= Evento SIN IMAGEN ========
-
-  createEventWithoutImage(group: Konva.Group, event: TimelineEvent): void {
-    const connector = new Konva.Line({
-      points: [0, 6, 0, 40],
-      stroke: '#2a2a2aff',
-      strokeWidth: 1,
-      dash: [5, 5]
-    });
-    group.add(connector);
-
-    const titleBox = new Konva.Rect({
-      x: -50,
-      y: 37,
-      width: 100,
-      height: 80,
-      fill: 'white',
-      stroke: '#06060625',
-      strokeWidth: 1,
-      cornerRadius: 4,
-      shadowColor: 'rgba(75, 72, 72, 1)',
-      shadowBlur: 5,
-      shadowOffset: { x: 0, y: 2 }
-    });
-    group.add(titleBox);
-
-    const titleText = new Konva.Text({
-      x: -45,
-      y:75,
-      text: this.truncateText(event.title, 80),
-      fontSize: 12,
-      fontFamily: 'Arial',
-      fill: '#363535ff',
-      width: 90,
-      align: 'center',
-      fontStyle: 'bold'
-    });
-    group.add(titleText);
-
-
-    if (event.link) {
-    this.agregarElementoLinkAlEvento(group, event);
-  }
-  }
-
-
   
-
-
   // ========== MÉTODOS DE EVENTOS ==========
   editEvent(event: TimelineEvent): void {
     this.selectedEvent = event;
@@ -6520,19 +6511,99 @@ private calculateExpectedY(x: number): number {
   
 
   updateEvent(): void {
-    if (!this.editedEvent.year || !this.editedEvent.title) {
-      alert('Por favor, complete al menos el año y el título del evento.');
-      return;
-    }
+  if (!this.editedEvent.year || !this.editedEvent.title) {
+    alert('Por favor, complete al menos el año y el título del evento.');
+    return;
+  }
 
-    if (this.selectedEvent) {
-      Object.assign(this.selectedEvent, this.editedEvent);
-      this.timelineEvents.sort((a, b) => a.year - b.year);
-      this.calculateYearRange();
-      this.renderTimelineEvents();
-      this.closeEditModal();
+  if (this.selectedEvent) {
+    // ✅ Guardar la posición actual antes de actualizar
+    const posicionActual = (this.selectedEvent as any)['posicionLibre'];
+    
+    // Actualizar los datos del evento
+    Object.assign(this.selectedEvent, this.editedEvent);
+    
+    // ✅ Mantener la posición guardada
+    if (posicionActual) {
+      (this.selectedEvent as any)['posicionLibre'] = posicionActual;
+    }
+    
+    // Buscar el grupo visual del evento y actualizarlo
+    this.actualizarEventoVisualmente(this.selectedEvent);
+    
+    // Solo recalcular años si es necesario
+    this.timelineEvents.sort((a, b) => a.year - b.year);
+    this.calculateYearRange();
+    
+    this.closeEditModal();
+  }
+}
+
+private actualizarEventoVisualmente(event: TimelineEvent): void {
+  const grupos = this.mainLayer.find('Group');
+  
+  for (let i = 0; i < grupos.length; i++) {
+    const grupo = grupos[i] as Konva.Group;
+    const eventoAsociado = grupo.getAttr('timelineEvent');
+    
+    if (eventoAsociado && 
+        eventoAsociado.title === this.editedEvent.title) {
+      
+      // Actualizar todos los textos del evento
+      grupo.children?.forEach((child: Konva.Node) => {
+        if (child instanceof Konva.Text) {
+          const texto = child.text();
+          
+          // Actualizar año
+          if (/^\d{4}$/.test(texto)) {
+            child.text(event.year.toString());
+          }
+          // Actualizar título (buscar texto con "bold")
+          else if (child.fontStyle() === 'bold') {
+            child.text(event.title);
+          }
+          // Actualizar descripción
+          else if (child.fontSize() < 12 && !texto.includes('🔗')) {
+            child.text(event.description || 'Descripción del evento...');
+          }
+        }
+        
+        // Actualizar imagen si existe
+        if (child instanceof Konva.Image || child instanceof Konva.Circle) {
+          if (event.image) {
+            this.actualizarImagenEvento(child, event.image);
+          }
+        }
+      });
+      
+      // Actualizar referencia del evento
+      grupo.setAttr('timelineEvent', event);
+      
+      this.mainLayer.batchDraw();
+      break;
     }
   }
+}
+
+private actualizarImagenEvento(nodoImagen: Konva.Shape, nuevaImagenUrl: string): void {
+  const imageObj = new Image();
+  imageObj.crossOrigin = 'Anonymous';
+  
+  imageObj.onload = () => {
+    if (nodoImagen instanceof Konva.Image) {
+      nodoImagen.image(imageObj);
+    } else if (nodoImagen instanceof Konva.Circle) {
+      nodoImagen.fillPatternImage(imageObj);
+    }
+    this.mainLayer.batchDraw();
+  };
+  
+  imageObj.onerror = () => {
+    console.error('Error cargando nueva imagen:', nuevaImagenUrl);
+  };
+  
+  imageObj.src = nuevaImagenUrl;
+}
 
  async onEditImageSelected(event: any): Promise<void> {
   const file = event.target.files[0];
@@ -6590,16 +6661,52 @@ private calculateExpectedY(x: number): number {
   }
 
   deleteEvent(): void {
-    if (this.selectedEvent && confirm('¿Está seguro de que desea eliminar este evento?')) {
-      const index = this.timelineEvents.indexOf(this.selectedEvent);
-      if (index > -1) {
-        this.timelineEvents.splice(index, 1);
-        this.calculateYearRange();
-        this.renderTimelineEvents();
-        this.closeEditModal();
-      }
+  if (this.selectedEvent && confirm('¿Está seguro de que desea eliminar este evento?')) {
+    const index = this.timelineEvents.indexOf(this.selectedEvent);
+    
+    if (index > -1) {
+      // ✅ Eliminar solo el grupo visual del evento eliminado
+      this.eliminarEventoVisualmente(this.selectedEvent);
+      
+      // Eliminar del array
+      this.timelineEvents.splice(index, 1);
+      
+      // Recalcular rango
+      this.calculateYearRange();
+      
+      // Redibujar
+      this.mainLayer.batchDraw();
+      
+      this.closeEditModal();
     }
   }
+}
+
+private eliminarEventoVisualmente(event: TimelineEvent): void {
+  const grupos = this.mainLayer.find('Group');
+  
+  for (let i = 0; i < grupos.length; i++) {
+    const grupo = grupos[i] as Konva.Group;
+    const eventoAsociado = grupo.getAttr('timelineEvent');
+    
+    if (eventoAsociado && 
+        eventoAsociado.year === event.year && 
+        eventoAsociado.title === event.title) {
+      
+      // Eliminar transformer si existe
+      const transformer = grupo.getAttr('myTransformer');
+      if (transformer) {
+        transformer.destroy();
+      }
+      
+      // Eliminar el grupo
+      grupo.destroy();
+      
+      console.log(`🗑️ Evento "${event.title}" eliminado visualmente`);
+      break;
+    }
+  }
+}
 
   // ========== MÉTODOS UTILITARIOS ==========
   truncateText(text: string, maxWidth: number): string {
@@ -6746,7 +6853,7 @@ addEventToTimeline(): void {
 
   const nuevoOrden = this.timelineEvents.length + 1;
   
-  // ✅ ASIGNAR DISEÑO BASADO EN EL PATRÓN CÍCLICO
+  // ASIGNAR DISEÑO BASADO EN EL PATRÓN CÍCLICO
   if (this.zonasPlantilla.length > 0) {
     const diseñoBase = this.obtenerPatronDiseño(nuevoOrden);
     if (diseñoBase) {
@@ -6763,24 +6870,41 @@ addEventToTimeline(): void {
         }
       };
       
-      console.log(`🎨 Evento ${nuevoOrden}: Diseño ${(nuevoOrden - 1) % this.zonasPlantilla.length + 1} en X=${nuevaX}`);
+      // ✅ Guardar posición inicial como posicionLibre
+      (this.newEvent as any)['posicionLibre'] = {
+        x: nuevaX,
+        y: diseñoBase.posicion.y
+      };
     }
   } else {
     // Fallback si no hay plantilla cargada
     this.duplicarDiseñoParaNuevoEvento();
     if (this.nuevoEventoDesign) {
       (this.newEvent as any)['zonaDesign'] = this.nuevoEventoDesign;
+      (this.newEvent as any)['posicionLibre'] = {
+        x: this.nuevoEventoDesign.posicion.x,
+        y: this.nuevoEventoDesign.posicion.y
+      };
       this.nuevoEventoDesign = null;
     }
   }
 
-  this.timelineEvents.push({...this.newEvent});
-  this.timelineEvents.sort((a, b) => a.year - b.year);
+  // Agregar el evento al array
+  const eventoNuevo = {...this.newEvent};
+  this.timelineEvents.push(eventoNuevo);
+  
+  // ✅ SOLO RENDERIZAR EL NUEVO EVENTO, NO TODOS
+  this.createTimelineEvent(eventoNuevo);
+  
+  // Actualizar rango de años si es necesario
   this.calculateYearRange();
-  this.renderTimelineEvents();
+  
+  // Redibujar el layer
+  this.mainLayer.batchDraw();
+  
   this.closeEventModal();
   
-  console.log(`✅ Evento agregado: ${this.newEvent.title} (${this.newEvent.year}) en posición X: ${(this.newEvent as any)['zonaDesign']?.posicion.x}`);
+  console.log(`✅ Evento "${eventoNuevo.title}" agregado sin re-renderizar eventos existentes`);
 }
 
 private limpiarPlantillaAnterior(): void {
@@ -7002,13 +7126,7 @@ private obtenerPatronDiseño(orden: number): any {
   return this.zonasPlantilla[indiceDiseño];
 }
 
-  addHistoricalEvent(year: number, person: string): void {
-    this.newEvent.year = year;
-    this.newEvent.title = person;
-    this.newEvent.person = person;
-    this.newEvent.image = '';
-    this.addEventToTimeline();
-  }
+
 
   calculateYearRange(): void {
     if (this.timelineEvents.length > 0) {
@@ -7024,10 +7142,6 @@ private obtenerPatronDiseño(orden: number): any {
     return 50 + ((year - this.minYear) / range) * (this.stage.width() - 100);
   }
 
-  selectEvent(event: TimelineEvent): void {
-    console.log('Evento seleccionado:', event);
-    alert(`Evento: ${event.title}\nAño: ${event.year}\nPersonaje: ${event.person}\nDescripción: ${event.description}`);
-  }
 
   async onImageSelected(event: any): Promise<void> {
   const file = event.target.files[0];
@@ -7106,81 +7220,10 @@ private obtenerPatronDiseño(orden: number): any {
     this.openEventModal();
   }
 
-  addMilestone(): void {
-    const x = this.stage.width() / 2;
-    const y = this.stage.height() / 2;
+ 
 
-    const star = new Konva.Star({
-      x: x,
-      y: y,
-      numPoints: 5,
-      innerRadius: 15,
-      outerRadius: 25,
-      fill: '#e74c3c',
-      stroke: '#c0392b',
-      strokeWidth: 2,
-      draggable: true
-    });
 
-    this.mainLayer.add(star);
-    this.mainLayer.batchDraw();
-  }
 
-  addText(): void {
-    const x = this.stage.width() / 2;
-    const y = this.stage.height() / 2;
-
-    const text = new Konva.Text({
-      x: x,
-      y: y,
-      text: 'Texto editable',
-      fontSize: 16,
-      fontFamily: 'Arial',
-      fill: '#2c3e50',
-      draggable: true
-    });
-
-    this.mainLayer.add(text);
-    this.mainLayer.batchDraw();
-  }
-
-  addRectangle(): void {
-    const x = this.stage.width() / 2;
-    const y = this.stage.height() / 2;
-
-    const rect = new Konva.Rect({
-      x: x - 50,
-      y: y - 30,
-      width: 100,
-      height: 60,
-      fill: '#3498db',
-      stroke: '#2980b9',
-      strokeWidth: 2,
-      draggable: true,
-      cornerRadius: 5
-    });
-
-    this.mainLayer.add(rect);
-    this.mainLayer.batchDraw();
-  }
-
-  addCircle(): void {
-    const x = this.stage.width() / 2;
-    const y = this.stage.height() / 2;
-
-    const circle = new Konva.Circle({
-      x: x,
-      y: y,
-      radius: 30,
-      fill: '#9b59b6',
-      stroke: '#8e44ad',
-      strokeWidth: 2,
-      draggable: true
-    });
-
-    this.mainLayer.add(circle);
-    this.mainLayer.batchDraw();
-  }
   //########################################
 
 async exportAsImage(): Promise<void> {
@@ -7489,52 +7532,6 @@ private exportarComoJPEG(): void {
   }
 
 
-
-
-
-/**
- * Exporta el proyecto completo como JSON
- */
-
-
-
-/*exportarComoJSON(nombreProyecto: string = 'mi-proyecto'): void {
-  try {
-    const proyectoExport: ProyectoExport = {
-      metadata: {
-        nombre: nombreProyecto,
-        descripcion: `Proyecto exportado desde el editor de líneas de tiempo`,
-        fechaExportacion: new Date().toISOString(),
-        version: '1.0',
-        totalEventos: this.timelineEvents.length
-      },
-      configuracion: {
-        backgroundColor: this.backgroundColor,
-        minYear: this.minYear,
-        maxYear: this.maxYear,
-        stageWidth: this.stage.width(),
-        stageHeight: this.stage.height()
-      },
-      eventos: this.timelineEvents.map(event => ({
-        ...event,
-        // Asegurar que las imágenes sean data URLs si existen
-        image: event.image && event.image.startsWith('data:') ? event.image : ''
-      })),
-      elementosKonva: this.serializarElementosKonva(),
-      estilos: this.getCurrentStyles()
-    };
-
-    this.descargarJSON(proyectoExport, nombreProyecto);
-    
-    console.log('✅ Proyecto exportado correctamente:', proyectoExport);
-    this.mostrarMensaje('Proyecto exportado como JSON correctamente');
-    
-  } catch (error) {
-    console.error('❌ Error exportando proyecto:', error);
-    this.mostrarMensaje('Error al exportar el proyecto', 'error');
-  }
-}*/
-
 /**
  * Serializa todos los elementos Konva del layer principal
  */
@@ -7797,25 +7794,6 @@ private obtenerShadow(node: Konva.Shape): any {
 }
 
 /**
- * Descarga el JSON como archivo
- */
-private descargarJSON(data: any, filename: string): void {
-  const jsonString = JSON.stringify(data, null, 2);
-  const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${filename}-${new Date().getTime()}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Liberar memoria
-  URL.revokeObjectURL(url);
-}
-
-/**
  * Muestra un mensaje al usuario
  */
 private mostrarMensaje(mensaje: string, tipo: 'success' | 'error' = 'success'): void {
@@ -7823,36 +7801,6 @@ private mostrarMensaje(mensaje: string, tipo: 'success' | 'error' = 'success'): 
   alert(`${tipo === 'success' ? '✅' : '❌'} ${mensaje}`);
 }
 
-private cargarProyectoDesdeJSON(proyecto: ProyectoExport): void {
-  try {
-    // 1. Limpiar el editor actual
-    this.timelineEvents = [];
-    this.limpiarEditorCompletamente();
-
-    // 2. Cargar configuración
-    this.backgroundColor = proyecto.configuracion.backgroundColor;
-    this.minYear = proyecto.configuracion.minYear;
-    this.maxYear = proyecto.configuracion.maxYear;
-    this.updateBackgroundColor(this.backgroundColor);
-
-    // 3. Cargar eventos
-    this.timelineEvents = proyecto.eventos;
-    
-    // 4. Cargar elementos Konva
-    proyecto.elementosKonva.forEach(elemento => {
-      this.crearElementoDesdeSerializacion(elemento);
-    });
-
-    // 5. Renderizar
-    this.renderTimelineEvents();
-    
-    this.mostrarMensaje('Proyecto importado correctamente');
-    
-  } catch (error) {
-    console.error('❌ Error cargando proyecto desde JSON:', error);
-    this.mostrarMensaje('Error al cargar el proyecto', 'error');
-  }
-}
 
 /**
  * Limpia el editor completamente

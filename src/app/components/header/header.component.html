@@ -52,14 +52,31 @@
       <!-- Menú de usuario -->
       <div *ngIf="isLoggedIn" class="dropdown ms-3">
         <button
-          class="btn btn-glass d-flex align-items-center gap-2"
-          type="button"
-          id="userMenu"
-          data-bs-toggle="dropdown"
-          aria-expanded="false">
-          <i class="fas fa-user-circle fs-5"></i> <span>Mi Cuenta</span>
-          <i class="fas fa-caret-down"></i>
-        </button>
+  class="btn btn-glass d-flex align-items-center gap-2"
+  type="button"
+  id="userMenu"
+  data-bs-toggle="dropdown"
+  aria-expanded="false">
+  
+  <!-- Avatar circular con iniciales -->
+ <div class="user-avatar">
+  <span>{{ getInitials() }}</span>
+</div>
+  
+  <!-- Nombre y plan en columna -->
+  <div class="d-flex flex-column align-items-start">
+    <span class="user-name">Mi Cuenta</span>
+    <span 
+      class="plan-badge-small" 
+      *ngIf="usuario?.plan"
+      [class.badge-free]="usuario?.plan === 'Free'"
+      [class.badge-premium]="usuario?.plan === 'Premium'">
+      {{ usuario?.plan }}
+    </span>
+  </div>
+  
+  <i class="fas fa-caret-down ms-1"></i>
+</button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 glass-dropdown" aria-labelledby="userMenu">
           <li>
             <a class="dropdown-item" routerLink="/usuario/mis-proyectos">

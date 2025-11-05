@@ -20,19 +20,19 @@ export class AuthInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // ✅ CORREGIDO: Identificar correctamente las URLs públicas
     if (this.isPublicRequest(req)) {
-      console.log('🔓 Request pública, sin token:', req.url);
+      //console.log('🔓 Request pública, sin token:', req.url);
       return next.handle(req);
     }
 
     const token = this.authService.getToken();
     
     if (!token) {
-      console.log('⚠️ URL requiere auth pero no hay token:', req.url);
+     // console.log('⚠️ URL requiere auth pero no hay token:', req.url);
       return next.handle(req); // Dejar que el backend maneje la falta de token
     }
 
     if (!this.authService.isTokenValid(token)) {
-      console.log('❌ Token expirado para:', req.url);
+      //console.log('❌ Token expirado para:', req.url);
       this.authService.logout();
       return next.handle(req);
     }
@@ -44,7 +44,7 @@ export class AuthInterceptor implements HttpInterceptor {
       }
     });
 
-    console.log('🔐 Request con token:', req.url);
+    //console.log('🔐 Request con token:', req.url);
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => this.handleError(error))
     );
@@ -83,14 +83,14 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private handleError(error: HttpErrorResponse): Observable<never> {
-    console.error('❌ Interceptor Error:', {
+    /*console.error('❌ Interceptor Error:', {
       status: error.status,
       url: error.url,
       message: error.message
-    });
+    });*/
 
     if (error.status === 401 || error.status === 403) {
-      console.log('🔑 Error de autenticación, verificando estado...');
+      //console.log('🔑 Error de autenticación, verificando estado...');
       
       // Solo logout si realmente había un usuario logueado
       if (this.authService.isLoggedIn()) {

@@ -77,46 +77,73 @@ export class MisProyectosComponent implements OnInit {
    * Construye la URL real de la portada desde la URL relativa guardada
    */
   private construirUrlPortadaReal(proyecto: ProyectoResponseDTO, portadaUrl: string): string {
-    try {
-      // Si ya es una URL completa, usarla directamente
-      if (portadaUrl.startsWith('http')) {
-        return portadaUrl;
-      }
-
-      // Si es una URL relativa del servidor, extraer los parámetros
-      if (portadaUrl.startsWith('/archivos/')) {
-        const partes = portadaUrl.split('/');
-        const tipoUsuario = partes[2];
-        const usuarioId = parseInt(partes[3]);
-        const proyectoId = parseInt(partes[4]);
-        const tipo = partes[5];
-        const nombreArchivo = partes[6];
-
-        // Usar el ArchivoService para construir la URL completa
-        return this.archivoService.obtenerUrlArchivo(
-          tipoUsuario as any,
-          usuarioId,
-          proyectoId,
-          tipo as any,
-          nombreArchivo,
-          false
-        );
-      }
-
-      // Si es una data URL (base64), usarla directamente
-      if (portadaUrl.startsWith('data:')) {
-        return portadaUrl;
-      }
-
-      // Si no reconocemos el formato, usar placeholder
-      console.warn('⚠️ Formato de portada no reconocido:', portadaUrl);
-      return this.getPlaceholderSVG(proyecto);
-
-    } catch (error) {
-      console.error('❌ Error construyendo URL de portada:', error);
-      return this.getPlaceholderSVG(proyecto);
+  try {
+    console.log('🔍 Construyendo URL para portada:', portadaUrl);
+    
+    // Si ya es una URL completa, usarla directamente
+    if (portadaUrl.startsWith('http://') || portadaUrl.startsWith('https://')) {
+      console.log('✅ URL completa:', portadaUrl);
+      return portadaUrl;
     }
+
+    // Si es una data URL (base64), usarla directamente
+    if (portadaUrl.startsWith('data:')) {
+      console.log('✅ Data URL (base64)');
+      return portadaUrl;
+    }
+
+    // ✅ CORREGIDO: Manejar URL del formato del servidor
+    if (portadaUrl.includes('/archivos/')) {
+      // Regex más flexible para capturar todos los tipos de usuario
+      const regex = /\/archivos\/(users|admins|users-premium)\/(\d+)\/(\d+)\/(portadas|assets)\/([^?]+)/;
+      const match = portadaUrl.match(regex);
+      
+      if (match) {
+        const [, tipoUsuario, usuarioId, proyectoId, tipo, nombreArchivo] = match;
+        
+        console.log('📊 Datos extraídos:', {
+          tipoUsuario,
+          usuarioId: parseInt(usuarioId),
+          proyectoId: parseInt(proyectoId),
+          tipo,
+          nombreArchivo
+        });
+        
+        // ✅ Usar el método correcto del servicio
+        const urlCompleta = this.archivoService.obtenerUrlArchivo(
+          tipoUsuario as 'users' | 'admins' | 'users-premium',
+          parseInt(usuarioId),
+          parseInt(proyectoId),
+          tipo as 'portadas' | 'assets',
+          nombreArchivo,
+          false, // No es plantilla (proyectos no son plantillas)
+          false  // No forzar descarga
+        );
+        
+        console.log('✅ URL construida:', urlCompleta);
+        return urlCompleta;
+      } else {
+        console.warn('⚠️ No se pudo extraer información de la URL:', portadaUrl);
+      }
+    }
+
+    // Si no reconocemos el formato, intentar agregar base URL
+    if (portadaUrl.startsWith('/')) {
+      const baseUrl = this.archivoService['apiUrl'] || 'http://localhost:3000';
+      const urlCompleta = `${baseUrl.replace('/archivos', '')}${portadaUrl}`;
+      console.log('🔧 URL relativa convertida:', urlCompleta);
+      return urlCompleta;
+    }
+
+    // Si no reconocemos el formato, usar placeholder
+    console.warn('⚠️ Formato de portada no reconocido:', portadaUrl);
+    return this.getPlaceholderSVG(proyecto);
+
+  } catch (error) {
+    console.error('❌ Error construyendo URL de portada:', error);
+    return this.getPlaceholderSVG(proyecto);
   }
+}
 
   /**
    * Genera un placeholder SVG personalizado para el proyecto
@@ -183,7 +210,8 @@ export class MisProyectosComponent implements OnInit {
     console.warn('⚠️ Error cargando portada del proyecto:', proyecto.titulo);
     
     // Reemplazar con placeholder SVG
-    event.target.src = this.getPlaceholderSVG(proyecto);
+   // event.target.src = this.getPlaceholderSVG(proyecto);
+   event.target.src = 'assets/images/placeholder-template.png';
   }
 
   /**

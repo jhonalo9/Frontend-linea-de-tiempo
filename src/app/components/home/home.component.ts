@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
-import { PlantillaService, Plantilla, PlantillaEstadisticaDTO } from '../../core/services/plantilla.service'; // ✅ Importar Plantilla
+import { PlantillaService, Plantilla, PlantillaEstadisticaDTO } from '../../core/services/plantilla.service';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HeaderComponent } from "../header/header.component";
@@ -84,36 +84,31 @@ private obtenerPlantillasCompletas(plantillasPopulares: PlantillaEstadisticaDTO[
     return;
   }
 
-  // ✅ Crear array de observables para obtener cada plantilla completa
   const requests = plantillasPopulares.map(popular => 
     this.plantillaService.getPlantillaById(popular.id)
   );
 
-  // ✅ Esperar a que todas las requests se completen
   forkJoin(requests).subscribe({
     next: (plantillasCompletas: Plantilla[]) => {
-      
-      // ✅ Procesar plantillas con datos completos
+      // ✅ PROCESAR plantillas igual que FullPlantillasComponent
       this.plantillas = plantillasCompletas.map(plantilla => {
-        // Asignar portadaUrl
+        // ✅ Parsear data si es string
+        const dataParsed = this.plantillaService.parsePlantillaData(plantilla);
         const portadaUrl = this.getPlantillaImage(plantilla);
-        (plantilla as any).portadaUrl = portadaUrl;
         
-        // Inicializar favorito como false
-        plantilla.favorito = false;
-        
-        
-        return plantilla;
+        return {
+          ...plantilla,
+          data: dataParsed,  // ✅ Asegurar que data está parseada
+          portadaUrl: portadaUrl,
+          favorito: false
+        };
       });
       
-      // ✅ Cargar estados de favoritos
       this.cargarEstadosFavoritos();
       this.isLoading = false;
     },
     error: (error) => {
       console.error('Error al cargar plantillas completas:', error);
-      
-      // ✅ FALLBACK: Usar las populares aunque no tengan data completa
       console.warn('Usando fallback con datos básicos');
       this.plantillas = this.convertirYProcesarPlantillas(plantillasPopulares);
       this.cargarEstadosFavoritos();
@@ -124,12 +119,22 @@ private obtenerPlantillasCompletas(plantillasPopulares: PlantillaEstadisticaDTO[
 
  private convertirYProcesarPlantillas(plantillasPopulares: PlantillaEstadisticaDTO[]): Plantilla[] {
   return plantillasPopulares.map(popular => {
-    // ✅ Crear objeto Plantilla básico para fallback
+    // ✅ Parsear data si es string
+    let dataParsed = popular.data || {};
+    if (typeof popular.data === 'string') {
+      try {
+        dataParsed = JSON.parse(popular.data);
+      } catch (error) {
+        console.warn(`Error parseando data de ${popular.nombre}:`, error);
+        dataParsed = {};
+      }
+    }
+
     const plantilla: Plantilla = {
       id: popular.id,
       nombre: popular.nombre,
       descripcion: popular.descripcion,
-      data: popular.data || {},
+      data: dataParsed,  // ✅ Usar data parseada
       estado: 'ACTIVA',
       esPublica: popular.esPublica || true,
       creadoPorId: popular.creadoPorId || 0,
@@ -138,9 +143,7 @@ private obtenerPlantillasCompletas(plantillasPopulares: PlantillaEstadisticaDTO[
       favorito: false
     };
 
-    // ✅ Usar placeholder para la portada
     (plantilla as any).portadaUrl = 'assets/images/placeholder-template.png';
-
     return plantilla;
   });
 }
@@ -253,7 +256,7 @@ private obtenerPortadaDesdePlantillaPopular(plantilla: PlantillaEstadisticaDTO):
 
     this.favoritoService.toggleFavorito(plantilla.id).subscribe({
       next: (response) => {
-        console.log('Favorito actualizado desde modal:', response.message);
+        //console.log('Favorito actualizado desde modal:', response.message);
         
         const plantillaEnLista = this.plantillas.find(p => p.id === plantilla.id);
         if (plantillaEnLista) {
@@ -281,7 +284,7 @@ private obtenerPortadaDesdePlantillaPopular(plantilla: PlantillaEstadisticaDTO):
 
     this.favoritoService.toggleFavorito(plantilla.id).subscribe({
       next: (response) => {
-        console.log('Favorito actualizado:', response.message);
+        //console.log('Favorito actualizado:', response.message);
       },
       error: (error) => {
         console.error('Error al alternar favorito:', error);
@@ -343,25 +346,30 @@ getPlantillaImage(plantilla: Plantilla): string {
 
 
   usarPlantilla(plantilla: any): void {
-  //console.log('✅ Plantilla seleccionada:', plantilla);
+  // ✅ Asegurar que data está parseada
+  const dataParsed = plantilla.data || this.plantillaService.parsePlantillaData(plantilla);
   
-  // ✅ USAR NUEVO MÉTODO con interfaz correcta
+  const plantillaProcesada = {
+    ...plantilla,
+    data: dataParsed
+  };
+
+  
+
   this.proyectoService.setProyectoTemporal({
-    titulo: '', // Se llenará en crear-proyecto
+    titulo: '',
     descripcion: '',
     plantillaId: plantilla.id,
-    plantillaData: plantilla // ← Guardar plantilla completa
+    plantillaData: plantillaProcesada 
   });
 
   if (this.authService.isLoggedIn()) {
-  // Redirigir al formulario
-  this.router.navigate(['/usuario/descripcion-proyect'], {
-    queryParams: { plantillaId: plantilla.id }
-  });
-
+    this.router.navigate(['/usuario/descripcion-proyect'], {
+      queryParams: { plantillaId: plantilla.id }
+    });
   } else {
-      this.router.navigate(['/login']);
-    }
+    this.router.navigate(['/login']);
+  }
 }
 
   getPlantillaTheme(plantilla: Plantilla): string {

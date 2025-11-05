@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { HttpClient,HttpErrorResponse } from '@angular/common/http';
+import { BehaviorSubject, Observable, tap, catchError, throwError  } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../environment/environment';
 
@@ -53,6 +53,10 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<CurrentUser | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
 
+   // Subject para manejar errores de rate limiting
+  private rateLimitErrorSubject = new BehaviorSubject<string>('');
+  public rateLimitError$ = this.rateLimitErrorSubject.asObservable();
+
   constructor(private http: HttpClient, private router: Router) {
     this.loadUserFromStorage();
   }
@@ -78,7 +82,10 @@ export class AuthService {
       }
     }
   }
+
+  
 login(credentials: LoginRequest): Observable<AuthResponse> {
+   this.rateLimitErrorSubject.next('');
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap(response => {
         
@@ -90,9 +97,39 @@ login(credentials: LoginRequest): Observable<AuthResponse> {
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('user', JSON.stringify(userData));
         this.currentUserSubject.next(userData);
+      }),
+      catchError((error: HttpErrorResponse) => {
+        return this.handleRateLimitError(error);
       })
     );
   }
+
+
+
+    private handleRateLimitError(error: HttpErrorResponse): Observable<never> {
+    if (error.status === 429) {
+      // Extraer el mensaje del error de rate limiting
+      const errorMessage = error.error?.message || 'Demasiados intentos. Por favor, espera un momento.';
+      
+      // Emitir el error para que los componentes puedan escucharlo
+      this.rateLimitErrorSubject.next(errorMessage);
+      
+      // También puedes extraer el tiempo de espera si tu backend lo envía
+      const retryAfter = error.headers.get('Retry-After');
+      if (retryAfter) {
+        console.log(`Debes esperar ${retryAfter} segundos`);
+      }
+    }
+    
+    // Re-lanzar el error para que el componente también lo maneje
+    return throwError(() => error);
+  }
+
+  // Método para limpiar manualmente el error de rate limiting
+  clearRateLimitError(): void {
+    this.rateLimitErrorSubject.next('');
+  }
+
  loginWithGoogle(code: string): Observable<AuthResponse> {
     const request: GoogleLoginRequest = { code };
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/google`, request).pipe(

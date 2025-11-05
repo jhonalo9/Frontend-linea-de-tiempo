@@ -9,182 +9,224 @@
 
   <!-- Header -->
   <div class="header">
-    <h1>Upgrade a Premium</h1>
-    <p>Desbloquea todas las funciones premium</p>
+    <h1>Elige tu Plan</h1>
+    <p>Selecciona el plan que mejor se adapte a tus necesidades</p>
   </div>
 
-  <!-- Progreso -->
-  <div class="progreso">
-    <div class="pasos">
-      <div *ngFor="let paso of pasos; let i = index" 
-           class="paso" 
-           [class.activo]="i === pasoActual"
-           [class.completado]="paso.completado">
-        <div class="circulo">{{ i + 1 }}</div>
-        <span class="titulo-paso">{{ paso.titulo }}</span>
+  <!-- Planes -->
+  <div class="planes-container">
+    <!-- Plan Free -->
+    <div class="plan-card" [class.plan-actual]="usuario?.plan === 'FREE'">
+      <div class="plan-badge" *ngIf="usuario?.plan === 'FREE'">Plan Actual</div>
+      <div class="plan-header">
+        <h2>Free</h2>
+        <div class="plan-precio">
+          <span class="precio-grande">$0</span>
+          <span class="precio-periodo">/ siempre</span>
+        </div>
       </div>
+      
+      <div class="plan-beneficios">
+        <ul>
+          <li><i class="bi bi-check-circle-fill text-success"></i> Crear Proyectos</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i> Panel de Favoritos</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i> Exportar</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i> Presentacion</li>
+          <li><i class="bi bi-x-circle-fill text-danger"></i> Crear Plantillas</li>
+          <li><i class="bi bi-x-circle-fill text-danger"></i> Ver mis Plantillas</li>
+          <li><i class="bi bi-x-circle-fill text-danger"></i> publicar Plantillas</li>
+        </ul>
+      </div>
+      
+      <button class="btn btn-plan" [disabled]="usuario?.plan === 'FREE'">
+        {{ usuario?.plan === 'FREE' ? 'Plan Actual' : 'Downgrade' }}
+      </button>
+    </div>
+
+    <!-- Plan Mensual -->
+    <div class="plan-card plan-destacado" [class.plan-actual]="usuario?.plan === 'PREMIUM' && !esAnual">
+      <div class="plan-badge" *ngIf="usuario?.plan === 'PREMIUM' && !esAnual">Plan Actual</div>
+      <div class="plan-etiqueta">Popular</div>
+      <div class="plan-header">
+        <h2>Premium</h2>
+        <div class="plan-precio">
+          <span class="precio-grande">$9.99</span>
+          <span class="precio-periodo">/ mes</span>
+        </div>
+      </div>
+      
+      <div class="plan-beneficios">
+        <ul>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Proyectos ilimitados</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Panel de Favoritos</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Exportar</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Presentacion</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Crear Plantillas</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Ver mis Plantillas</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  publicar Plantillas</li>
+        </ul>
+      </div>
+      
+      <button class="btn btn-plan btn-primary" 
+              (click)="seleccionarPlan('mensual')"
+              [disabled]="usuario?.plan === 'PREMIUM' && !esAnual">
+        {{ usuario?.plan === 'PREMIUM' && !esAnual ? 'Plan Actual' : 'Suscribirse' }}
+      </button>
+    </div>
+
+    <!-- Plan Anual -->
+    <div class="plan-card" [class.plan-actual]="usuario?.plan === 'PREMIUM' && esAnual">
+      <div class="plan-badge" *ngIf="usuario?.plan === 'PREMIUM' && esAnual">Plan Actual</div>
+      <div class="plan-ahorro">Ahorra 20%</div>
+      <div class="plan-header">
+        <h2>Premium Anual</h2>
+        <div class="plan-precio">
+          <span class="precio-grande">$99.99</span>
+          <span class="precio-periodo">/ año</span>
+        </div>
+        <div class="precio-equivalente">$8.33 / mes</div>
+      </div>
+      
+      <div class="plan-beneficios">
+        <ul>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Proyectos ilimitados</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Exportar</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Presentacion</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Crear Plantillas</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  Ver mis Plantillas</li>
+          <li><i class="bi bi-check-circle-fill text-success"></i>  publicar Plantillas</li>
+          <li><i class="bi bi-star-fill text-warning"></i> 2 meses gratis</li>
+        </ul>
+      </div>
+      
+      <button class="btn btn-plan btn-primary" 
+              (click)="seleccionarPlan('anual')"
+              [disabled]="usuario?.plan === 'PREMIUM' && esAnual">
+        {{ usuario?.plan === 'PREMIUM' && esAnual ? 'Plan Actual' : 'Suscribirse' }}
+      </button>
     </div>
   </div>
 
-  <!-- Paso 1: Resumen del Plan -->
-  <div *ngIf="pasoActual === 0" class="paso-contenido">
-    <div class="card plan-card">
-      <div class="card-header">
-        <div class="premium-icon">⭐</div>
-        <h2>Plan Premium</h2>
-        <p>Todo lo que necesitas para maximizar tu productividad</p>
-      </div>
+  <!-- Modal de Pago -->
+  <div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+    <div class="modal-contenido" (click)="$event.stopPropagation()">
+      <button class="modal-cerrar" (click)="cerrarModal()">×</button>
       
-      <div class="card-content">
-        <div class="beneficios">
-          <h3>Beneficios incluidos:</h3>
-          <ul>
-            <li>✅ Timeline ilimitado</li>
-            <li>✅ Proyectos ilimitados</li>
-            <li>✅ Exportación de datos</li>
-            <li>✅ Soporte prioritario</li>
-            <li>✅ Plantillas premium</li>
-            <li>✅ Colaboración en equipo</li>
-          </ul>
+      <div class="modal-header">
+        <h2>Información de Pago</h2>
+        <p>Completa los datos para confirmar tu suscripción</p>
+      </div>
+
+      <!-- Resumen del plan seleccionado -->
+      <div class="resumen-pago">
+        <h3>Resumen de tu compra</h3>
+        <div class="resumen-item">
+          <span>Plan seleccionado:</span>
+          <strong>{{ planSeleccionado === 'mensual' ? 'Premium Mensual' : 'Premium Anual' }}</strong>
         </div>
-        
-        <div class="precio">
-          <h2>$9.99 / mes</h2>
-          <p>o $99.99 / año (ahorra 20%)</p>
+        <div class="resumen-item">
+          <span>Total a pagar:</span>
+          <strong class="precio-total">{{ planSeleccionado === 'mensual' ? '$9.99' : '$99.99' }}</strong>
+        </div>
+        <div class="resumen-nota">
+          {{ planSeleccionado === 'mensual' ? 'Renovación automática cada mes' : 'Renovación automática cada año' }}
+        </div>
+      </div>
+
+      <!-- Formulario de pago -->
+      <form class="formulario-pago">
+        <div class="form-group">
+          <label>Número de Tarjeta</label>
+          <input type="text" 
+                 [(ngModel)]="datosPago.numeroTarjeta" 
+                 name="numeroTarjeta"
+                 (input)="formatearNumeroTarjeta($event)"
+                 placeholder="1234 5678 9012 3456"
+                 maxlength="19"
+                 required>
         </div>
 
-        <div class="usuario-info" *ngIf="usuario">
-          <p><strong>Usuario actual:</strong> {{ usuario.nombre }}</p>
-          <p><strong>Plan actual:</strong> <span class="plan-badge">{{ usuario.plan }}</span></p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Fecha Expiración</label>
+            <input type="text" 
+                   [(ngModel)]="datosPago.fechaExpiracion" 
+                   name="fechaExpiracion"
+                   (input)="formatearFechaExpiracion($event)"
+                   placeholder="MM/YY"
+                   maxlength="5"
+                   required>
+          </div>
+
+          <div class="form-group">
+            <label>CVV</label>
+            <input type="password" 
+                   [(ngModel)]="datosPago.cvv" 
+                   name="cvv"
+                   maxlength="3"
+                   placeholder="123"
+                   required>
+          </div>
         </div>
-      </div>
-      
-      <div class="card-actions">
-        <button class="btn btn-primary" (click)="siguientePaso()">
-          Continuar con el Pago
-        </button>
-        <button class="btn btn-secondary" routerLink="/">
+
+        <div class="form-group">
+          <label>Nombre del Titular</label>
+          <input type="text" 
+                 [(ngModel)]="datosPago.nombreTitular" 
+                 name="nombreTitular"
+                 placeholder="Nombre completo"
+                 required>
+        </div>
+
+        <div class="form-group">
+          <label>Email para facturación</label>
+          <input type="email" 
+                 [(ngModel)]="datosPago.email" 
+                 name="email"
+                 [value]="usuario?.email"
+                 placeholder="correo@ejemplo.com"
+                 required>
+        </div>
+
+        <div class="seguridad">
+          <span>🔒 Tu información está protegida con encriptación SSL</span>
+        </div>
+      </form>
+
+      <!-- Botones del modal -->
+      <div class="modal-acciones">
+        <button class="btn btn-secondary" (click)="cerrarModal()">
           Cancelar
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Paso 2: Información de Pago -->
-  <div *ngIf="pasoActual === 1" class="paso-contenido">
-    <div class="card">
-      <div class="card-header">
-        <h2>Información de Pago</h2>
-        <p>Ingresa los datos de tu tarjeta de crédito</p>
-      </div>
-      
-      <div class="card-content">
-        <form class="formulario-pago">
-          <div class="form-group full-width">
-            <label>Número de Tarjeta</label>
-            <input type="text" 
-                   [(ngModel)]="datosPago.numeroTarjeta" 
-                   name="numeroTarjeta"
-                   (input)="formatearNumeroTarjeta($event)"
-                   placeholder="1234 5678 9012 3456"
-                   maxlength="19"
-                   required>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Fecha Expiración</label>
-              <input type="text" 
-                     [(ngModel)]="datosPago.fechaExpiracion" 
-                     name="fechaExpiracion"
-                     (input)="formatearFechaExpiracion($event)"
-                     placeholder="MM/YY"
-                     maxlength="5"
-                     required>
-            </div>
-
-            <div class="form-group">
-              <label>CVV</label>
-              <input type="password" 
-                     [(ngModel)]="datosPago.cvv" 
-                     name="cvv"
-                     maxlength="3"
-                     required>
-            </div>
-          </div>
-
-          <div class="form-group full-width">
-            <label>Nombre del Titular</label>
-            <input type="text" 
-                   [(ngModel)]="datosPago.nombreTitular" 
-                   name="nombreTitular"
-                   required>
-          </div>
-
-          <div class="form-group full-width">
-            <label>Email para facturación</label>
-            <input type="email" 
-                   [(ngModel)]="datosPago.email" 
-                   name="email"
-                   [value]="usuario?.email"
-                   required>
-          </div>
-
-          <div class="seguridad">
-            <span>🔒 Tu información está protegida con encriptación SSL</span>
-          </div>
-        </form>
-      </div>
-      
-      <div class="card-actions">
         <button class="btn btn-primary" 
                 (click)="procesarPago()"
                 [disabled]="cargando">
-          <span *ngIf="!cargando">Pagar $9.99</span>
-          <span *ngIf="cargando">
+          <span *ngIf="!cargando">Confirmar Pago</span>
+          <span *ngIf="cargando" class="loading">
             <div class="spinner"></div>
             Procesando...
           </span>
         </button>
-        <button class="btn btn-secondary" (click)="pasoAnterior()">
-          Atrás
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- Paso 3: Confirmación -->
-  <div *ngIf="pasoActual === 2" class="paso-contenido">
-    <div class="card confirmacion-card">
-      <div class="card-header">
-        <div class="icono-exito">🎉</div>
-        <h2>¡Upgrade Exitoso!</h2>
-        <p>Ahora eres un usuario Premium</p>
-      </div>
+  <!-- Modal de Confirmación -->
+  <div class="modal-overlay" *ngIf="pagoExitoso" (click)="cerrarModalExito()">
+    <div class="modal-contenido modal-exito" (click)="$event.stopPropagation()">
+      <div class="icono-exito">🎉</div>
+      <h2>¡Suscripción Exitosa!</h2>
+      <p>Ahora eres un usuario Premium</p>
       
-      <div class="card-content">
-        <div class="mensaje-exito">
-          <p>Tu cuenta ha sido actualizada exitosamente al plan Premium.</p>
-          <p>Ahora tienes acceso a todas las funciones exclusivas.</p>
-          
-          <div class="resumen" *ngIf="usuario">
-            <h4>Resumen de tu plan:</h4>
-            <p><strong>Usuario:</strong> {{ usuario.nombre }}</p>
-            <p><strong>Plan:</strong> <span class="plan-premium">Premium</span></p>
-            <p><strong>Pago:</strong> $9.99 / mes</p>
-            <p><strong>Próxima facturación:</strong> {{ today | date:'longDate' }}</p>
-          </div>
-        </div>
+      <div class="resumen-exito">
+        <p><strong>Plan:</strong> {{ planSeleccionado === 'mensual' ? 'Premium Mensual' : 'Premium Anual' }}</p>
+        <p><strong>Pago:</strong> {{ planSeleccionado === 'mensual' ? '$9.99 / mes' : '$99.99 / año' }}</p>
+        <p><strong>Próxima facturación:</strong> {{ today | date:'longDate' }}</p>
       </div>
-      
-      <div class="card-actions">
-        <button class="btn btn-primary" routerLink="/">
-          Ir Inicio
-        </button>
-        <!--<button class="btn btn-secondary" routerLink="/">
-          Ver Mi Perfil
-        </button>-->
-      </div>
+
+      <button class="btn btn-primary" (click)="cerrarModalExito()">
+        Continuar
+      </button>
     </div>
   </div>
 </div>
